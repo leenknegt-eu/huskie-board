@@ -37,6 +37,22 @@ add_custom_command(
     DEPENDS ${PROTOCOL_XML}
 )
 
+# input-method-unstable-v1: KWin's protocol for the virtual keyboard process
+pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+set(IM_XML "${WAYLAND_PROTOCOLS_DIR}/unstable/input-method/input-method-unstable-v1.xml")
+set(IM_CODE "${CMAKE_CURRENT_BINARY_DIR}/input-method-unstable-v1-protocol.c")
+set(IM_HEADER "${CMAKE_CURRENT_BINARY_DIR}/input-method-unstable-v1-client-protocol.h")
+add_custom_command(
+    OUTPUT ${IM_HEADER}
+    COMMAND ${WAYLAND_SCANNER_EXECUTABLE} client-header ${IM_XML} ${IM_HEADER}
+    DEPENDS ${IM_XML}
+)
+add_custom_command(
+    OUTPUT ${IM_CODE}
+    COMMAND ${WAYLAND_SCANNER_EXECUTABLE} private-code ${IM_XML} ${IM_CODE}
+    DEPENDS ${IM_XML}
+)
+
 # Optional LayerShellQt support
 find_package(LayerShellQt)
 
@@ -53,6 +69,8 @@ qt_add_executable(tastiera
     src/klipperintegration.h
     ${PROTOCOL_CODE}
     ${PROTOCOL_HEADER}
+    ${IM_CODE}
+    ${IM_HEADER}
 )
 
 target_include_directories(tastiera PRIVATE

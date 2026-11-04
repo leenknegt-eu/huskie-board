@@ -25,6 +25,7 @@ Window {
         category: "General"
         property string theme: "Auto"   // "Auto" follows the KDE color scheme
         property bool docked: false     // true = pinned to bottom centre, not draggable
+        property string showMode: "auto" // "auto" = follow text-field focus, "manual" = ✖ + floating bubble
     }
 
     readonly property var themeChoices: [
@@ -51,6 +52,72 @@ Window {
     }
 
     Component.onCompleted: controller.activeTheme = prefs.theme
+
+    // ---- Visibility -------------------------------------------------------
+    // "auto":   shown while a text field is focused (KWin input-method activate /
+    //           deactivate), hidden otherwise; ✖ hides until the next text field.
+    // "manual": legacy behaviour; ✖ collapses to a floating bubble.
+    // Auto needs KWin to have launched us as its input method; otherwise fall back.
+    readonly property string effectiveShowMode: virtualKeyEngine.hasInputMethod ? prefs.showMode : "manual"
+    property bool autoHidden: true
+    property bool started: false
+
+    // Called from C++ once the layer-shell surface is configured
+    function start() {
+        started = true
+        autoHidden = !virtualKeyEngine.imActive
+        applyVisibility()
+    }
+
+    function applyVisibility() {
+        if (!started) return
+        var show = effectiveShowMode === "manual" || !autoHidden
+        if (!show) showSettings = false
+        mainWindow.visible = show
+        if (show) {
+            if (isMinimized) minimizedPill.syncMinimizedMask(); else cardBox.syncMask()
+        }
+    }
+
+    function hideKeyboard() {
+        if (effectiveShowMode === "auto") {
+            autoHidden = true
+        } else {
+            isMinimized = true
+            minimizedPill.syncMinimizedMask()
+        }
+    }
+
+    onAutoHiddenChanged: applyVisibility()
+    onEffectiveShowModeChanged: {
+        if (effectiveShowMode === "auto") isMinimized = false
+        else autoHidden = false
+        applyVisibility()
+    }
+
+    // Focus hops between fields produce deactivate+activate in quick succession;
+    // wait a moment before hiding so the keyboard doesn't flicker.
+    Timer {
+        id: autoHideTimer
+        interval: 250
+        onTriggered: mainWindow.autoHidden = true
+    }
+
+    Connections {
+        target: virtualKeyEngine
+        function onImActiveChanged() {
+            if (mainWindow.effectiveShowMode !== "auto") return
+            if (virtualKeyEngine.imActive) {
+                autoHideTimer.stop()
+                mainWindow.autoHidden = false
+            } else {
+                autoHideTimer.restart()
+            }
+        }
+        function onSensitiveInputChanged() {
+            controller.isPasswordMode = virtualKeyEngine.sensitiveInput
+        }
+    }
     property int shiftState: 0 // 0 = lowercase, 1 = shift single, 2 = caps lock
     property bool ctrlActive: false
     property bool altActive: false
@@ -736,7 +803,7 @@ Window {
                                     gestureEngine.updateCurrentPrefix("")
                                 }
                             }
-                            // Close Keyboard Button ✖ (Contracts to Floating Bubble)
+                            // Hide Keyboard Button ✖ (auto: hide until next text field, manual: floating bubble)
                             KeyButton {
                                 label: "✖"
                                 isSpecial: true
@@ -744,10 +811,7 @@ Window {
                                 implicitWidth: 48
                                 currentTheme: mainWindow.activeTheme
                                 Layout.fillHeight: true
-                                onReleased: {
-                                    mainWindow.isMinimized = true
-                                    minimizedPill.syncMinimizedMask()
-                                }
+                                onReleased: mainWindow.hideKeyboard()
                             }
                         }
                     }
@@ -915,10 +979,7 @@ Window {
                                 implicitWidth: 48
                                 currentTheme: mainWindow.activeTheme
                                 Layout.fillHeight: true
-                                onReleased: {
-                                    mainWindow.isMinimized = true
-                                    minimizedPill.syncMinimizedMask()
-                                }
+                                onReleased: mainWindow.hideKeyboard()
                             }
                         }
                     }
@@ -1174,6 +1235,42 @@ Window {
                             selected: prefs.docked
                             onTapped: prefs.docked = true
                         }
+                    }
+
+                    Text {
+                        text: "Show keyboard"
+                        color: settingsPanel.labelColor
+                        font.pixelSize: 13
+                        font.bold: true
+                        topPadding: 6
+                    }
+
+                    Row {
+                        spacing: 6
+                        OptionPill {
+                            accent: settingsPanel.accent
+                            labelColor: settingsPanel.labelColor
+                            text: "Automatically (text fields)"
+                            selected: prefs.showMode === "auto"
+                            onTapped: prefs.showMode = "auto"
+                        }
+                        OptionPill {
+                            accent: settingsPanel.accent
+                            labelColor: settingsPanel.labelColor
+                            text: "Manually (floating button)"
+                            selected: prefs.showMode === "manual"
+                            onTapped: prefs.showMode = "manual"
+                        }
+                    }
+
+                    Text {
+                        visible: !virtualKeyEngine.hasInputMethod
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                        text: "Automatic mode needs Tastiera to be selected as the virtual keyboard in System Settings; using manual mode for now."
+                        color: settingsPanel.labelColor
+                        opacity: 0.7
+                        font.pixelSize: 11
                     }
                 }
             }

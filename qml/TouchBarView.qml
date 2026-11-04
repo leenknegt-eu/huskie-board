@@ -18,16 +18,17 @@ Rectangle {
         anchors.fill: parent
         spacing: 8
 
-        // Left section: Title Handle (Draggable)
+        // Left section: drag grip (floating mode only)
         Rectangle {
-            width: titleText.width + 12
-            height: 28
+            visible: !(cardBox && cardBox.docked)
+            width: titleText.width + 16
+            height: 34
             color: "transparent"
             Layout.alignment: Qt.AlignVCenter
 
             Text {
                 id: titleText
-                text: cardBox && cardBox.docked ? "Tastiera" : ":::  Tastiera"
+                text: ":::"
                 color: currentTheme ? currentTheme.textColor : "#1e1e1e"
                 font.family: currentTheme ? currentTheme.fontFamily : "sans-serif"
                 font.pixelSize: 14

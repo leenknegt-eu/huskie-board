@@ -69,7 +69,8 @@ int main(int argc, char *argv[])
                 lWindow->setExclusiveZone(0);
             }
 #endif
-            window->setVisible(true);
+            // QML decides whether to show now (manual mode) or wait for a text field (auto mode)
+            QMetaObject::invokeMethod(window, "start");
         }
     }, Qt::QueuedConnection);
 

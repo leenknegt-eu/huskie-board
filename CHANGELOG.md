@@ -13,6 +13,15 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
 - Keyboard and minimized bubble can no longer be dragged off-screen; positions are re-clamped on rotation.
 - New "Docked" position: pinned to the bottom centre at its current width, not draggable.
 - Fixed unreadable special-key and accent-popup labels on light themes.
+- **Typing now works on KWin**: text is committed through `zwp_input_method_v1` (the protocol KWin gives
+  its virtual keyboard). KWin 6.8 does not offer `zwp_virtual_keyboard_v1`, so previously everything fell
+  back to `/dev/uinput`. Unicode/emoji are committed directly instead of via a clipboard paste.
+- `/dev/uinput` is now only opened on demand (no text field active), so a fake hardware keyboard is no
+  longer registered at startup.
+- New default "Show keyboard: Automatically": appears when a text field is focused, hides when it loses
+  focus; ✖ hides it until the next text field. The old ✖ + floating bubble behaviour is kept as "Manually".
+- Password/sensitive fields are detected from the input-method content type (disables suggestions).
+- Removed the "KDE Touch Key" title; a small grip remains as drag handle in floating mode.
 
 ## [v0.91] - 2026-08-07
 
