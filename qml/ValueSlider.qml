@@ -1,6 +1,6 @@
 import QtQuick 2.15
 
-// Minimal touch-friendly slider (self-drawn so it matches every theme)
+// Material 3 (2024) slider: thick rounded track split by a vertical handle bar
 Item {
     id: slider
     property real from: 0
@@ -11,34 +11,41 @@ Item {
     property color trackColor: "#888888"
     signal moved(real v)
 
-    height: 36
+    height: 44
     readonly property real frac: (value - from) / (to - from)
+    readonly property real handleX: 8 + (width - 16) * frac
+    readonly property real gapHalf: 6
 
-    Rectangle {     // track
+    Rectangle {     // active part
         anchors.verticalCenter: parent.verticalCenter
-        x: 10; width: parent.width - 20; height: 4; radius: 2
-        color: slider.trackColor
-        opacity: 0.35
-    }
-    Rectangle {     // filled part
-        anchors.verticalCenter: parent.verticalCenter
-        x: 10; width: (parent.width - 20) * slider.frac; height: 4; radius: 2
+        x: 8
+        width: Math.max(0, slider.handleX - slider.gapHalf - 8)
+        height: 16
+        radius: 8
         color: slider.accent
     }
-    Rectangle {     // handle
+    Rectangle {     // inactive part
         anchors.verticalCenter: parent.verticalCenter
-        x: 10 + (parent.width - 20) * slider.frac - width / 2
-        width: 22; height: 22; radius: 11
+        x: slider.handleX + slider.gapHalf
+        width: Math.max(0, slider.width - 8 - x)
+        height: 16
+        radius: 8
+        color: Qt.rgba(slider.accent.r, slider.accent.g, slider.accent.b, 0.22)
+    }
+    Rectangle {     // handle bar
+        anchors.verticalCenter: parent.verticalCenter
+        x: slider.handleX - width / 2
+        width: 4
+        height: 40
+        radius: 2
         color: slider.accent
-        border.color: "#ffffff"
-        border.width: 2
     }
 
     MouseArea {
         anchors.fill: parent
         preventStealing: true
         function update(mx) {
-            var f = Math.max(0, Math.min(1, (mx - 10) / (slider.width - 20)))
+            var f = Math.max(0, Math.min(1, (mx - 8) / (slider.width - 16)))
             var v = slider.from + f * (slider.to - slider.from)
             if (slider.stepSize > 0) v = Math.round(v / slider.stepSize) * slider.stepSize
             v = Math.max(slider.from, Math.min(slider.to, v))

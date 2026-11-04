@@ -47,6 +47,11 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
   · space · . · round Enter), vector Shift/Caps/Backspace/Enter/emoji icons, flat icon toolbar (clipboard,
   terminal, size, dock, settings, hide), digit hints on the top row, flush docked edge.
 - Emoji view: emoji were typed twice; added ABC / space / backspace row (the old ABC pill is gone).
+- Material look: ripple + state layer on key press, Material You tonal special keys (tinted with the accent),
+  soft elevation shadows on popups, larger Material radii, tonal toolbar icon states; settings rebuilt with
+  Material 3 switches, segmented buttons, filter chips and slider. The settings view grows the keyboard upwards.
+- Key popout now also works in the Extended layout; its spacebar is a plain key.
+- Fixed: changing the keyboard height grew the card downwards off-screen; the bottom edge now stays put.
 
 ## [v0.91] - 2026-08-07
 

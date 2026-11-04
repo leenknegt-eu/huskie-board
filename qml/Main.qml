@@ -327,8 +327,11 @@ Window {
         // Extended = 6-row PC layout. The terminal / Ctrl-Alt strip only takes space when shown.
         readonly property bool showStrip: controller.isTerminalMode || mainWindow.ctrlActive || mainWindow.altActive
         readonly property real keyAreaBase: controller.sizeMode === "full" ? 338 : 240
-        height: Math.min(72 + (showStrip ? 44 : 0) + Math.round(keyAreaBase * prefs.heightScale),
+        readonly property real keyboardHeight: 72 + (showStrip ? 44 : 0) + Math.round(keyAreaBase * prefs.heightScale)
+        // while settings are open the card grows (upwards) so nothing needs scrolling
+        height: Math.min(mainWindow.showSettings ? Math.max(keyboardHeight, 600) : keyboardHeight,
                          Screen.height * 0.8)
+        Behavior on height { enabled: prefs.animations; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
         // Position is managed imperatively (dragging breaks bindings anyway):
         //  - docked:   bottom centre, flush with the screen edge, not draggable
@@ -378,7 +381,19 @@ Window {
         onXChanged: cardBox.syncMask()
         onYChanged: cardBox.syncMask()
         onWidthChanged: { cardBox.placeDefault(); cardBox.syncMask() }   // size mode switched
-        onHeightChanged: cardBox.syncMask()
+        // Height changes (height slider, size mode, shortcut strip) grow/shrink the card
+        // upwards: keep the bottom edge where it is instead of pushing it off-screen.
+        property real lastHeight: height
+        onHeightChanged: {
+            if (docked || mainWindow.panelMode) {
+                cardBox.placeDefault()
+            } else {
+                cardBox.y -= (height - lastHeight)
+                cardBox.clamp()
+            }
+            lastHeight = height
+            cardBox.syncMask()
+        }
         onVisibleChanged: if (!mainWindow.isMinimized) cardBox.syncMask()
         Component.onCompleted: { cardBox.placeDefault(); cardBox.syncMask() }
 
@@ -966,7 +981,7 @@ Window {
             anchors.leftMargin: 12
             anchors.rightMargin: 12
             anchors.bottomMargin: 10
-            radius: 16
+            radius: 24
             color: mainWindow.activeTheme && mainWindow.activeTheme.headerPillBg ? mainWindow.activeTheme.headerPillBg : "#434a56"
 
             readonly property color labelColor: mainWindow.activeTheme && mainWindow.activeTheme.pillTextColor ? mainWindow.activeTheme.pillTextColor : "#d0d5dd"
@@ -977,61 +992,102 @@ Window {
 
             Flickable {
                 anchors.fill: parent
-                anchors.margins: 14
+                anchors.margins: 18
                 contentHeight: settingsColumn.implicitHeight
                 clip: true
 
                 Column {
                     id: settingsColumn
                     width: parent.width
-                    spacing: 10
+                    spacing: 4
 
+                    // ---- Typing ----
                     Text {
                         text: "Typing"
-                        color: settingsPanel.labelColor
-                        font.pixelSize: 13
-                        font.bold: true
+                        color: settingsPanel.accent
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
+                        bottomPadding: 4
                     }
 
-                    Flow {
-                        width: parent.width
-                        spacing: 6
-                        OptionPill {
-                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
-                            text: prefs.keyPopout ? "Key popup: on" : "Key popup: off"
-                            selected: prefs.keyPopout
-                            onTapped: prefs.keyPopout = !prefs.keyPopout
+                    Item {
+                        width: parent.width; height: 48
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Key popup"
+                            color: settingsPanel.labelColor
+                            font.pixelSize: 15
                         }
-                        OptionPill {
-                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
-                            text: prefs.animations ? "Animations: on" : "Animations: off"
-                            selected: prefs.animations
-                            onTapped: prefs.animations = !prefs.animations
-                        }
-                        OptionPill {
-                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
-                            text: "Keys: Gboard"
-                            selected: prefs.keyStyle === "gboard"
-                            onTapped: prefs.keyStyle = "gboard"
-                        }
-                        OptionPill {
-                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
-                            text: "Keys: Classic"
-                            selected: prefs.keyStyle === "classic"
-                            onTapped: prefs.keyStyle = "classic"
+                        M3Switch {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            checked: prefs.keyPopout
+                            accent: settingsPanel.accent
+                            ink: settingsPanel.labelColor
+                            animate: prefs.animations
+                            onToggled: (on) => prefs.keyPopout = on
                         }
                     }
 
-                    Text {
-                        topPadding: 6
-                        text: "Keyboard height  " + Math.round(prefs.heightScale * 100) + "%"
-                        color: settingsPanel.labelColor
-                        font.pixelSize: 13
-                        font.bold: true
+                    Item {
+                        width: parent.width; height: 48
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Animations"
+                            color: settingsPanel.labelColor
+                            font.pixelSize: 15
+                        }
+                        M3Switch {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            checked: prefs.animations
+                            accent: settingsPanel.accent
+                            ink: settingsPanel.labelColor
+                            animate: prefs.animations
+                            onToggled: (on) => prefs.animations = on
+                        }
+                    }
+
+                    Item {
+                        width: parent.width; height: 52
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Key style"
+                            color: settingsPanel.labelColor
+                            font.pixelSize: 15
+                        }
+                        M3Segmented {
+                            surface: settingsPanel.color
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            accent: settingsPanel.accent
+                            ink: settingsPanel.labelColor
+                            current: prefs.keyStyle
+                            options: [{ value: "gboard", label: "Gboard" }, { value: "classic", label: "Classic" }]
+                            onSelected: (v) => prefs.keyStyle = v
+                        }
+                    }
+
+                    Item {
+                        width: parent.width; height: 40
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Keyboard height"
+                            color: settingsPanel.labelColor
+                            font.pixelSize: 15
+                        }
+                        Text {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: Math.round(prefs.heightScale * 100) + "%"
+                            color: settingsPanel.labelColor
+                            opacity: 0.7
+                            font.pixelSize: 14
+                        }
                     }
 
                     ValueSlider {
-                        width: Math.min(parent.width, 420)
+                        width: parent.width
                         from: 0.7
                         to: 1.5
                         stepSize: 0.05
@@ -1041,53 +1097,51 @@ Window {
                         onMoved: (v) => prefs.heightScale = v
                     }
 
+                    // ---- Show keyboard ----
                     Text {
+                        topPadding: 14
+                        bottomPadding: 8
                         text: "Show keyboard"
-                        color: settingsPanel.labelColor
-                        font.pixelSize: 13
-                        font.bold: true
-                        topPadding: 6
+                        color: settingsPanel.accent
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
                     }
 
-                    Row {
-                        spacing: 6
-                        OptionPill {
-                            accent: settingsPanel.accent
-                            labelColor: settingsPanel.labelColor
-                            text: "Automatically (text fields)"
-                            selected: prefs.showMode === "auto"
-                            onTapped: prefs.showMode = "auto"
-                        }
-                        OptionPill {
-                            accent: settingsPanel.accent
-                            labelColor: settingsPanel.labelColor
-                            text: "Manually (floating button)"
-                            selected: prefs.showMode === "manual"
-                            onTapped: prefs.showMode = "manual"
-                        }
+                    M3Segmented {
+                        surface: settingsPanel.color
+                        accent: settingsPanel.accent
+                        ink: settingsPanel.labelColor
+                        current: prefs.showMode
+                        options: [{ value: "auto", label: "Automatically" }, { value: "manual", label: "Manually" }]
+                        onSelected: (v) => prefs.showMode = v
                     }
 
                     Text {
-                        visible: !virtualKeyEngine.hasInputMethod
                         width: parent.width
+                        topPadding: 6
                         wrapMode: Text.WordWrap
-                        text: "Automatic mode needs Tastiera to be selected as the virtual keyboard in System Settings; using manual mode for now."
+                        text: virtualKeyEngine.hasInputMethod
+                              ? "Automatically: appears when a text field is focused. Manually: a floating button brings it back."
+                              : "Automatic mode needs Tastiera to be selected as the virtual keyboard in System Settings; using manual mode for now."
                         color: settingsPanel.labelColor
                         opacity: 0.7
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                     }
 
+                    // ---- Theme ----
                     Text {
-                        topPadding: 6
+                        topPadding: 14
+                        bottomPadding: 8
                         text: "Theme"
-                        color: settingsPanel.labelColor
-                        font.pixelSize: 13
-                        font.bold: true
+                        color: settingsPanel.accent
+                        font.pixelSize: 14
+                        font.weight: Font.Medium
                     }
 
                     Flow {
                         width: parent.width
-                        spacing: 6
+                        spacing: 8
+                        bottomPadding: 8
                         Repeater {
                             model: mainWindow.themeChoices
                             delegate: OptionPill {

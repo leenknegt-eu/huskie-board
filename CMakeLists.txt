@@ -106,6 +106,9 @@ qt_add_qml_module(tastiera
         qml/QwertyLayout.qml
         qml/KeyIcon.qml
         qml/ValueSlider.qml
+        qml/Elevation.qml
+        qml/M3Switch.qml
+        qml/M3Segmented.qml
         qml/Accents.js
         qml/themes/KdeAuto.qml
         qml/themes/BreezeLight.qml

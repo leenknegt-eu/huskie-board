@@ -14,8 +14,17 @@ Rectangle {
     width: 34
     height: 34
     radius: width / 2
-    color: active ? activeColor : idleColor
+    // Material tonal icon button: selected = tinted container + accent-coloured icon
+    color: active ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.22) : idleColor
     Behavior on color { ColorAnimation { duration: 120 } }
+
+    Rectangle {     // pressed state layer
+        anchors.fill: parent
+        radius: parent.radius
+        color: btn.iconColor
+        opacity: press.pressed ? 0.12 : 0
+        Behavior on opacity { NumberAnimation { duration: 120 } }
+    }
 
     Canvas {
         id: canvas
@@ -23,7 +32,7 @@ Rectangle {
         width: 20
         height: 20
         antialiasing: true
-        readonly property color ink: btn.active ? "#ffffff" : btn.iconColor
+        readonly property color ink: btn.active ? btn.activeColor : btn.iconColor
         onInkChanged: requestPaint()
         Connections { target: btn; function onIconChanged() { canvas.requestPaint() } }
 
@@ -107,6 +116,7 @@ Rectangle {
     }
 
     MouseArea {
+        id: press
         anchors.fill: parent
         onClicked: btn.clicked()
     }

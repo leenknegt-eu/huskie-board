@@ -74,7 +74,7 @@ Item {
     function isLetter(s) { return s.length === 1 && s.toLowerCase() !== s.toUpperCase() }
 
     function displayLabel(d) {
-        if (d.t === "space") return "space"
+        if (d.t === "space") return ""
         if (d.t !== "char") return d.l
         if (isLetter(d.l)) return (shift !== caps) ? d.s : d.l
         return shift ? d.s : d.l
@@ -147,7 +147,8 @@ Item {
                     accents: (d.t === "char" && ext.isLetter(d.l) && !ext.anyCombo) ? Accents.variants(ext.displayLabel(d), false) : []
                     onAccentCommitted: ext.releaseLatches()
                     hintAccent: (d.t === "char" && !ext.isLetter(d.l)) ? (ext.shift ? d.l : d.s) : ""
-                    isSpecial: d.t !== "char"
+                    isSpecial: d.t !== "char" && d.t !== "space"
+                    showPopout: d.t === "char"
                     isPrimaryAction: ext.isActiveModifier(d) || d.t === "enter"
                     isCustomAction: true
                     currentTheme: ext.currentTheme

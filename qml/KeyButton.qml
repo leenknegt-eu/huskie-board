@@ -50,8 +50,10 @@ Rectangle {
 
     readonly property color textCol: currentTheme ? currentTheme.textColor : "#f8fafc"
     readonly property color accentCol: currentTheme ? currentTheme.accentColor : "#0284c7"
+    readonly property color specialBase: currentTheme && currentTheme.specialKeyBackgroundColor ? currentTheme.specialKeyBackgroundColor
+                                                                                                : (currentTheme ? currentTheme.keyBackgroundColor : "#1e293b")
     readonly property color baseColor: isPrimaryAction ? accentCol :
-           (isSpecial ? (currentTheme && currentTheme.specialKeyBackgroundColor ? currentTheme.specialKeyBackgroundColor : (currentTheme ? currentTheme.keyBackgroundColor : "#1e293b")) :
+           (isSpecial ? (gboardStyle ? Qt.tint(specialBase, Qt.rgba(accentCol.r, accentCol.g, accentCol.b, 0.14)) : specialBase) :
            (currentTheme ? currentTheme.keyBackgroundColor : "#1e293b"))
     readonly property color pressedColor: isPrimaryAction ? Qt.darker(baseColor, 1.18) :
            (currentTheme ? currentTheme.keyActiveColor : "#334155")
@@ -59,7 +61,7 @@ Rectangle {
            ((isSpecial && !gboardStyle) ? (currentTheme ? currentTheme.accentTextColor : "#38bdf8") : textCol)
 
     // Pressed feedback: colour change (Gboard) instead of the classic shrink
-    color: isPressed ? pressedColor : baseColor
+    color: (isPressed && !gboardStyle) ? pressedColor : baseColor
     Behavior on color {
         enabled: root.animate
         ColorAnimation { duration: root.isPressed ? 40 : 160 }
@@ -72,6 +74,60 @@ Rectangle {
     Behavior on scale {
         enabled: root.animate
         NumberAnimation { duration: 60; easing.type: Easing.OutQuad }
+    }
+
+    // ---- Material state layer + ripple (Gboard style) ---------------------------
+    Item {
+        id: rippleClip
+        visible: root.gboardStyle
+        anchors.fill: parent
+        clip: true
+
+        Rectangle {     // state layer
+            anchors.fill: parent
+            radius: root.radius
+            color: root.labelColor
+            opacity: root.isPressed ? 0.10 : 0
+            Behavior on opacity { enabled: root.animate; NumberAnimation { duration: root.isPressed ? 40 : 200 } }
+        }
+        Canvas {        // ripple from the touch point, clipped to the key's rounded shape
+            id: ripple
+            anchors.fill: parent
+            property real cx: 0
+            property real cy: 0
+            readonly property real maxR: Math.sqrt(root.width * root.width + root.height * root.height)
+            property real r: 0
+            onRChanged: requestPaint()
+            onOpacityChanged: requestPaint()
+            opacity: 0
+            onPaint: {
+                var c = getContext("2d")
+                c.reset()
+                if (r <= 0) return
+                var rr = Math.min(root.radius, width / 2, height / 2)
+                c.beginPath()
+                c.roundedRect(0, 0, width, height, rr, rr)
+                c.clip()
+                c.beginPath()
+                c.arc(cx, cy, r, 0, Math.PI * 2)
+                c.fillStyle = root.labelColor
+                c.fill()
+            }
+        }
+        ParallelAnimation {
+            id: rippleIn
+            NumberAnimation { target: ripple; property: "r"; from: 0; to: ripple.maxR; duration: 260; easing.type: Easing.OutCubic }
+            NumberAnimation { target: ripple; property: "opacity"; from: 0.16; to: 0.12; duration: 260 }
+        }
+        NumberAnimation { id: rippleOut; target: ripple; property: "opacity"; to: 0; duration: 220 }
+
+        function start(x, y) {
+            if (!root.animate) return
+            rippleOut.stop()
+            ripple.cx = x; ripple.cy = y
+            rippleIn.restart()
+        }
+        function end() { if (root.animate) rippleOut.restart() }
     }
 
     // ---- Label / icon ---------------------------------------------------------
@@ -115,8 +171,10 @@ Rectangle {
     }
 
     // ---- Key popout (preview above the finger) ---------------------------------
-    readonly property bool popoutWanted: popoutEnabled && isPressed && !isAccentOverlayOpen
-                                         && !isSpecial && !isPrimaryAction && !isCustomAction
+    // Which keys get a popout: by default regular character keys. Layouts that handle
+    // keys themselves (isCustomAction) can opt in with showPopout: true.
+    property bool showPopout: !isSpecial && !isPrimaryAction && !isCustomAction
+    readonly property bool popoutWanted: popoutEnabled && isPressed && !isAccentOverlayOpen && showPopout
                                          && icon === "" && label.trim().length > 0 && label.length <= 2
 
     Item {
@@ -133,20 +191,17 @@ Rectangle {
         Behavior on opacity { enabled: root.animate; NumberAnimation { duration: root.popoutWanted ? 70 : 120; easing.type: Easing.OutQuad } }
         Behavior on scale { enabled: root.animate; NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
 
-        Rectangle {     // soft shadow
+        Elevation {
             anchors.fill: parent
-            anchors.topMargin: 2
-            anchors.bottomMargin: -3
             radius: popoutBody.radius
-            color: "#000000"
-            opacity: 0.35
+            level: 2
         }
         Rectangle {
             id: popoutBody
             anchors.fill: parent
-            radius: (currentTheme ? currentTheme.keyRadius : 12) + 4
+            radius: 14
             color: currentTheme ? currentTheme.keyBackgroundColor : "#1e293b"
-            border.width: 1
+            border.width: root.gboardStyle ? 0 : 1
             border.color: currentTheme ? currentTheme.keyBorderColor : "#334155"
 
             Text {
@@ -205,20 +260,17 @@ Rectangle {
             y = dy
         }
 
-        Rectangle {     // shadow
+        Elevation {
             anchors.fill: parent
-            anchors.topMargin: 2
-            anchors.bottomMargin: -3
             radius: accentBody.radius
-            color: "#000000"
-            opacity: 0.35
+            level: 3
         }
         Rectangle {
             id: accentBody
             anchors.fill: parent
-            radius: (currentTheme ? currentTheme.keyRadius : 12) + 4
+            radius: 16
             color: currentTheme ? currentTheme.keyBackgroundColor : "#1e293b"
-            border.width: 1
+            border.width: root.gboardStyle ? 0 : 1
             border.color: currentTheme ? currentTheme.keyBorderColor : "#334155"
         }
 
@@ -236,7 +288,7 @@ Rectangle {
                     y: Math.floor(index / accentPopup.cols) * accentPopup.cellH + 2
                     width: accentPopup.cellW - 4
                     height: accentPopup.cellH - 4
-                    radius: (currentTheme ? currentTheme.keyRadius : 12)
+                    radius: 12
                     color: index === root.selectedAccentIndex ? root.accentCol : "transparent"
 
                     Text {
@@ -294,6 +346,7 @@ Rectangle {
         anchors.fill: parent
 
         onPressed: (mouse) => {
+            rippleClip.start(mouse.x, mouse.y)
             root.pressed()
             longPressTimer.start()
             if (gestureEngine) {
@@ -312,6 +365,7 @@ Rectangle {
         }
 
         onReleased: {
+            rippleClip.end()
             longPressTimer.stop()
             if (gestureEngine) {
                 gestureEngine.endTouch()
@@ -340,6 +394,7 @@ Rectangle {
         }
 
         onCanceled: {
+            rippleClip.end()
             longPressTimer.stop()
             if (root.isAccentOverlayOpen) root.commitAccent()
         }

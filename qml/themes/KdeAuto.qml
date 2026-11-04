@@ -17,13 +17,13 @@ QtObject {
 
     property color backgroundColor: pal.window
     property color cardBorderColor: shade(pal.window, 0.25)
-    property int cardRadius: 12
+    property int cardRadius: 24
 
     property color keyBackgroundColor: pal.button
     property color keyActiveColor: Qt.tint(pal.button, Qt.rgba(pal.highlight.r, pal.highlight.g, pal.highlight.b, 0.35))
     property color keyBorderColor: shade(pal.button, 0.18)
     property int keyBorderWidth: 1
-    property int keyRadius: 6
+    property int keyRadius: 10
 
     property color specialKeyBackgroundColor: shade(pal.button, isDark ? 0.22 : 0.09)
     property color textColor: pal.buttonText

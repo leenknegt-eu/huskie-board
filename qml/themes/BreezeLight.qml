@@ -8,13 +8,13 @@ QtObject {
 
     property color backgroundColor: "#eff0f1"
     property color cardBorderColor: "#bdc3c7"
-    property int cardRadius: 12
+    property int cardRadius: 24
 
     property color keyBackgroundColor: "#fcfcfc"
     property color keyActiveColor: "#d6ecf8"
     property color keyBorderColor: "#c4c9cd"
     property int keyBorderWidth: 1
-    property int keyRadius: 6
+    property int keyRadius: 10
 
     property color specialKeyBackgroundColor: "#e3e5e7"
     property color textColor: "#232629"
