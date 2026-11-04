@@ -30,6 +30,10 @@ int main(int argc, char *argv[])
     setvbuf(stdout, NULL, _IONBF, 0);
     setupProcessSecurity();
 
+    // Wayland-only application: never fall back to xcb when launched from a bare environment
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
+        qputenv("QT_QPA_PLATFORM", "wayland");
+
     QGuiApplication app(argc, argv);
     app.setOrganizationName("KDE");
     app.setOrganizationDomain("kde.org");
