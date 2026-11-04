@@ -17,6 +17,12 @@ class KeyboardController : public QObject
     Q_PROPERTY(bool isPasswordMode READ isPasswordMode WRITE setIsPasswordMode NOTIFY isPasswordModeChanged)
     Q_PROPERTY(bool isHardwareKeyboardConnected READ isHardwareKeyboardConnected NOTIFY hardwareKeyboardStatusChanged)
     Q_PROPERTY(bool backspaceDeletingWord READ backspaceDeletingWord NOTIFY backspaceDeletingWordChanged)
+    // True while the Plasma lock screen is active (org.freedesktop.ScreenSaver)
+    Q_PROPERTY(bool screenLocked READ screenLocked NOTIFY screenLockedChanged)
+    // "panel" (zwp_input_panel_surface_v1, KWin-managed) or "layer" (wlr-layer-shell overlay)
+    Q_PROPERTY(QString surfaceRole READ surfaceRole NOTIFY surfaceRoleChanged)
+    // Whether the panel role can be used at all (only when KWin launched us)
+    Q_PROPERTY(bool panelRoleAvailable READ panelRoleAvailable CONSTANT)
 
 public:
     explicit KeyboardController(QObject *parent = nullptr);
@@ -52,6 +58,13 @@ public:
     Q_INVOKABLE void stopKeyRepeat();
     Q_INVOKABLE void updateInputMask(QObject *windowObj, int x, int y, int width, int height);
 
+    bool screenLocked() const { return m_screenLocked; }
+    QString surfaceRole() const { return m_surfaceRole; }
+    bool panelRoleAvailable() const;
+    // Give the window the requested Wayland role, recreating its surface if needed.
+    // The window keeps its visibility state.
+    Q_INVOKABLE void applySurfaceRole(QObject *windowObj, const QString &role);
+
 signals:
     void sizeModeChanged();
     void layoutModeChanged();
@@ -62,12 +75,20 @@ signals:
     void keyboardVisibleChanged();
     void hardwareKeyboardStatusChanged();
     void backspaceDeletingWordChanged();
+    void screenLockedChanged();
+    void surfaceRoleChanged();
     void triggerBackspace();
     void triggerWordBackspace();
     void triggerKeyRepeat(uint32_t keycode);
 
+private Q_SLOTS:
+    void onScreenSaverActiveChanged(bool active);
+
 private:
     void checkHardwareKeyboard();
+    void watchScreenLock();
+    bool m_screenLocked = false;
+    QString m_surfaceRole;
 
     QString m_sizeMode{"normal"}; // "normal", "full", "onehand"
     QString m_layoutMode{"abc"};  // "abc", "accenti", "symbols", "numpad", "emoji", "klipper"

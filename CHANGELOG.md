@@ -22,6 +22,15 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
   focus; ✖ hides it until the next text field. The old ✖ + floating bubble behaviour is kept as "Manually".
 - Password/sensitive fields are detected from the input-method content type (disables suggestions).
 - Removed the "KDE Touch Key" title; a small grip remains as drag handle in floating mode.
+- **Lock screen support**: the keyboard now uses KWin's input-panel surface (`zwp_input_panel_surface_v1`,
+  like KDE's own keyboard) when docked in automatic mode and always while the screen is locked, so it
+  appears over the lock screen. Floating/manual use keeps the layer-shell overlay.
+- **Login screen**: installs a systemd drop-in so Plasma Login Manager's greeter starts Tastiera instead of
+  the hard-coded `plasma-keyboard` (CMake option `TASTIERA_LOGIN_SCREEN`, default ON).
+- Gboard-style feel (all optional under Settings → Typing): key popout above the pressed key, flat keys
+  with colour press feedback, slide-in/out and popup animations. "Classic" keys keep the old outlined look.
+- Docked is now the default position for new installs.
+- Fixed auto show/hide occasionally reading stale state (keyboard staying hidden after activation).
 
 ## [v0.91] - 2026-08-07
 

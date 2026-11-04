@@ -4,6 +4,17 @@
 #include <QRegion>
 #include <QDir>
 #include <QFileInfo>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+#include <QtWaylandClient/private/qwaylandwindow_p.h>
+
+#include "inputpanelshell.h"
+
+#ifdef HAVE_LAYERSHELLQT
+#include <LayerShellQt/Window>
+#endif
 
 KeyboardController::KeyboardController(QObject *parent)
     : QObject(parent),
@@ -45,6 +56,99 @@ KeyboardController::KeyboardController(QObject *parent)
 
     // Hardware keyboard detection (touchbar auto-switch disabled per user request)
     checkHardwareKeyboard();
+    watchScreenLock();
+}
+
+// ---------------------------------------------------------------------------
+// Lock screen tracking: the keyboard must use the input-panel role while locked,
+// because KWin only shows input panels (not layer-shell overlays) over the locker.
+// ---------------------------------------------------------------------------
+void KeyboardController::watchScreenLock()
+{
+    auto bus = QDBusConnection::sessionBus();
+    bus.connect(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"),
+                QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("ActiveChanged"),
+                this, SLOT(onScreenSaverActiveChanged(bool)));
+
+    auto msg = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("/ScreenSaver"),
+                                              QStringLiteral("org.freedesktop.ScreenSaver"), QStringLiteral("GetActive"));
+    auto *watcher = new QDBusPendingCallWatcher(bus.asyncCall(msg), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *w) {
+        QDBusPendingReply<bool> reply = *w;
+        if (reply.isValid())
+            onScreenSaverActiveChanged(reply.value());
+        w->deleteLater();
+    });
+}
+
+void KeyboardController::onScreenSaverActiveChanged(bool active)
+{
+    if (m_screenLocked == active) return;
+    m_screenLocked = active;
+    qInfo() << "Screen locked:" << active;
+    emit screenLockedChanged();
+}
+
+// ---------------------------------------------------------------------------
+// Surface roles
+// ---------------------------------------------------------------------------
+bool KeyboardController::panelRoleAvailable() const
+{
+    return InputPanelShellIntegration::instance() != nullptr;
+}
+
+void KeyboardController::applySurfaceRole(QObject *windowObj, const QString &requested)
+{
+    QWindow *window = qobject_cast<QWindow *>(windowObj);
+    if (!window) return;
+
+    QString role = requested;
+    if (role == QLatin1String("panel") && !panelRoleAvailable())
+        role = QStringLiteral("layer");
+    if (role == m_surfaceRole && window->handle())
+        return;
+
+    const bool wasVisible = window->isVisible();
+
+    // A wl_surface's role can't change: drop the platform window and build a new one
+    if (window->handle()) {
+        window->setVisible(false);
+        window->destroy();
+    }
+
+#ifdef HAVE_LAYERSHELLQT
+    // LayerShellQt attaches its integration when its Window object is constructed,
+    // so remove any previous instance; a fresh one is created for the layer role.
+    for (auto *old : window->findChildren<LayerShellQt::Window *>(Qt::FindDirectChildrenOnly))
+        delete old;
+#endif
+
+    if (role == QLatin1String("panel")) {
+        window->create();
+        if (auto *waylandWindow = dynamic_cast<QtWaylandClient::QWaylandWindow *>(window->handle()))
+            waylandWindow->setShellIntegration(InputPanelShellIntegration::instance());
+    } else {
+#ifdef HAVE_LAYERSHELLQT
+        if (auto *layer = LayerShellQt::Window::get(window)) {   // also creates the platform window
+            layer->setLayer(LayerShellQt::Window::LayerOverlay);
+            layer->setScope(QStringLiteral("virtual-keyboard"));
+            layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
+            layer->setAnchors(LayerShellQt::Window::AnchorBottom);
+            layer->setExclusiveZone(0);
+        }
+#else
+        window->create();
+#endif
+    }
+
+    if (m_surfaceRole != role) {
+        m_surfaceRole = role;
+        emit surfaceRoleChanged();
+    }
+    qInfo() << "Surface role:" << role;
+
+    if (wasVisible)
+        window->setVisible(true);
 }
 
 void KeyboardController::setSizeMode(const QString &mode)

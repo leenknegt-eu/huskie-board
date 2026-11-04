@@ -9,9 +9,6 @@
 #include "gestureengine.h"
 #include "klipperintegration.h"
 
-#ifdef HAVE_LAYERSHELLQT
-#include <LayerShellQt/Window>
-#endif
 
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -59,17 +56,7 @@ int main(int argc, char *argv[])
             // Explicitly set window flags to bypass tiling window managers (Krohnkite, Bspwm, etc.)
             window->setFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::BypassWindowManagerHint | Qt::WindowDoesNotAcceptFocus);
 
-#ifdef HAVE_LAYERSHELLQT
-            auto lWindow = LayerShellQt::Window::get(window);
-            if (lWindow) {
-                lWindow->setLayer(LayerShellQt::Window::LayerOverlay);
-                lWindow->setScope(QStringLiteral("virtual-keyboard"));
-                lWindow->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);
-                lWindow->setAnchors(LayerShellQt::Window::AnchorBottom);
-                lWindow->setExclusiveZone(0);
-            }
-#endif
-            // QML decides whether to show now (manual mode) or wait for a text field (auto mode)
+            // QML picks the surface role (input panel / layer shell) and whether to show now
             QMetaObject::invokeMethod(window, "start");
         }
     }, Qt::QueuedConnection);

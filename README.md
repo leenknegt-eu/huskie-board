@@ -62,6 +62,10 @@ makepkg -si
 
 Then select **Tastiera Touch Keyboard** in System Settings → Keyboard → Virtual Keyboard.
 
+The package also makes the Plasma Login Manager greeter use Tastiera (systemd drop-in in
+`/usr/lib/systemd/user/plasma-login-kwin_wayland.service.d/tastiera.conf`). On the lock screen and in
+docked mode the keyboard is shown by KWin like KDE's own keyboard: tap a text field with your finger.
+
 ### Requirements
 - **Qt 6** (Qt6Gui, Qt6Qml, Qt6Quick, Qt6DBus, Qt6WaylandClient)
 - **KDE Frameworks 6** (KCoreAddons, KI18n, LayerShellQt)

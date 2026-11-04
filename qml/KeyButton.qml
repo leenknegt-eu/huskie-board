@@ -27,22 +27,95 @@ Rectangle {
 
     Layout.fillHeight: true
 
+    // User preferences (the "prefs" Settings object lives in Main.qml)
+    readonly property bool gboardStyle: typeof prefs === "undefined" || prefs.keyStyle !== "classic"
+    readonly property bool animate: typeof prefs === "undefined" || prefs.animations
+    readonly property bool popoutEnabled: typeof prefs === "undefined" || prefs.keyPopout
+    readonly property bool isPressed: mouseArea.pressed
+
+    // Keep the pressed key (and its popout) above neighbouring keys
+    z: isPressed || isAccentOverlayOpen ? 10 : 0
+
     radius: currentTheme ? currentTheme.keyRadius : 12
 
-    // Dynamic background color based on key type & state
-    color: isPrimaryAction ? (currentTheme ? currentTheme.accentColor : "#0284c7") :
+    readonly property color baseColor: isPrimaryAction ? (currentTheme ? currentTheme.accentColor : "#0284c7") :
            (isSpecial ? (currentTheme && currentTheme.specialKeyBackgroundColor ? currentTheme.specialKeyBackgroundColor : (currentTheme ? currentTheme.keyBackgroundColor : "#1e293b")) :
-           (mouseArea.pressed ? (currentTheme ? currentTheme.keyActiveColor : "#334155") :
-           (currentTheme ? currentTheme.keyBackgroundColor : "#1e293b")))
+           (currentTheme ? currentTheme.keyBackgroundColor : "#1e293b"))
+    readonly property color pressedColor: isPrimaryAction ? Qt.darker(baseColor, 1.18) :
+           (currentTheme ? currentTheme.keyActiveColor : "#334155")
+
+    // Pressed feedback: colour change (Gboard) instead of the classic shrink
+    color: isPressed ? pressedColor : baseColor
+    Behavior on color {
+        enabled: root.animate
+        ColorAnimation { duration: root.isPressed ? 40 : 160 }
+    }
 
     border.color: isPrimaryAction ? (currentTheme ? currentTheme.accentColor : "#0284c7") :
                   (currentTheme ? currentTheme.keyBorderColor : "#334155")
-    border.width: currentTheme ? currentTheme.keyBorderWidth : 1
+    border.width: gboardStyle ? 0 : (currentTheme && currentTheme.keyBorderWidth !== undefined ? currentTheme.keyBorderWidth : 1)
 
-    // Scale animation on press
-    scale: mouseArea.pressed ? 0.95 : 1.0
+    scale: (!gboardStyle && isPressed) ? 0.95 : 1.0
     Behavior on scale {
+        enabled: root.animate
         NumberAnimation { duration: 60; easing.type: Easing.OutQuad }
+    }
+
+    // Flat Gboard keys get a hairline bottom shadow so they still read as keys
+    Rectangle {
+        visible: root.gboardStyle && !root.isPrimaryAction
+        z: -1
+        anchors.fill: parent
+        anchors.topMargin: 1
+        anchors.bottomMargin: -1
+        radius: root.radius
+        color: "#000000"
+        opacity: 0.12
+    }
+
+    // ---- Key popout (Gboard-style preview above the finger) ----------------
+    readonly property bool popoutWanted: popoutEnabled && isPressed && !isAccentOverlayOpen
+                                         && !isSpecial && !isPrimaryAction && !isCustomAction
+                                         && label.length > 0 && label.length <= 2
+
+    Item {
+        id: popout
+        z: 100
+        width: Math.max(root.width * 1.12, 46)
+        height: Math.max(root.height * 1.2, 56)
+        x: (root.width - width) / 2
+        y: -height - 6
+        transformOrigin: Item.Bottom
+        visible: opacity > 0.01
+        opacity: root.popoutWanted ? 1 : 0
+        scale: root.popoutWanted ? 1 : 0.55
+        Behavior on opacity { enabled: root.animate; NumberAnimation { duration: root.popoutWanted ? 70 : 120; easing.type: Easing.OutQuad } }
+        Behavior on scale { enabled: root.animate; NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
+
+        Rectangle {     // soft shadow
+            anchors.fill: parent
+            anchors.topMargin: 2
+            anchors.bottomMargin: -3
+            radius: popoutBody.radius
+            color: "#000000"
+            opacity: 0.35
+        }
+        Rectangle {
+            id: popoutBody
+            anchors.fill: parent
+            radius: (currentTheme ? currentTheme.keyRadius : 12) + 4
+            color: currentTheme ? currentTheme.keyBackgroundColor : "#1e293b"
+            border.width: 1
+            border.color: currentTheme ? currentTheme.keyBorderColor : "#334155"
+
+            Text {
+                anchors.centerIn: parent
+                text: root.label
+                color: currentTheme ? currentTheme.textColor : "#f8fafc"
+                font.family: currentTheme ? currentTheme.fontFamily : "sans-serif"
+                font.pixelSize: 30
+            }
+        }
     }
 
     // Main Key Label
@@ -56,8 +129,10 @@ Rectangle {
         font.family: currentTheme ? currentTheme.fontFamily : "sans-serif"
         font.pixelSize: root.label.length > 8 ? 9 :
                        (root.label.length > 5 ? 11 :
-                       (root.label.length > 3 ? 13 : (root.isSpecial ? 15 : 18)))
+                       (root.label.length > 3 ? 13 : (root.isSpecial ? 15 : (root.gboardStyle ? 21 : 18))))
         font.bold: root.isSpecial || root.isPrimaryAction
+        // hide the label while the popout shows it, like Gboard
+        opacity: root.popoutWanted ? 0.25 : 1
     }
 
     // Superscript Accent Hint (Top Right)
@@ -76,7 +151,12 @@ Rectangle {
     // Custom Lightweight Accent Overlay (Does NOT steal touch grab)
     Rectangle {
         id: accentOverlay
-        visible: root.isAccentOverlayOpen
+        visible: opacity > 0.01
+        opacity: root.isAccentOverlayOpen ? 1 : 0
+        scale: root.isAccentOverlayOpen ? 1 : 0.8
+        transformOrigin: Item.Bottom
+        Behavior on opacity { enabled: root.animate; NumberAnimation { duration: 90 } }
+        Behavior on scale { enabled: root.animate; NumberAnimation { duration: 120; easing.type: Easing.OutBack } }
         z: 9999
         y: -height - 8
         x: (parent.width - width) / 2

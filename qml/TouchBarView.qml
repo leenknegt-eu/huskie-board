@@ -20,7 +20,7 @@ Rectangle {
 
         // Left section: drag grip (floating mode only)
         Rectangle {
-            visible: !(cardBox && cardBox.docked)
+            visible: !!(cardBox && cardBox.draggable)
             width: titleText.width + 16
             height: 34
             color: "transparent"
@@ -39,7 +39,7 @@ Rectangle {
             MouseArea {
                 id: dragMouseArea
                 anchors.fill: parent
-                cursorShape: cardBox && cardBox.docked ? Qt.ArrowCursor : Qt.SizeAllCursor
+                cursorShape: Qt.SizeAllCursor
                 property point startPos: "0,0"
 
                 onPressed: (mouse) => {

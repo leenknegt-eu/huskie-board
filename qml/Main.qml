@@ -12,8 +12,11 @@ Window {
     color: "transparent"
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus
 
-    width: Screen.width
-    height: Screen.height
+    // Layer-shell overlay: full-screen transparent surface with an input mask.
+    // Input panel: KWin places the surface itself, so it is exactly the keyboard's size.
+    readonly property bool panelMode: controller.surfaceRole === "panel"
+    width: panelMode ? cardBox.width : Screen.width
+    height: panelMode ? cardBox.height : Screen.height
 
     property string currentInputBuffer: ""
     property bool showSettings: false
@@ -24,8 +27,11 @@ Window {
         id: prefs
         category: "General"
         property string theme: "Auto"   // "Auto" follows the KDE color scheme
-        property bool docked: false     // true = pinned to bottom centre, not draggable
+        property bool docked: true      // true = pinned to bottom centre, not draggable
         property string showMode: "auto" // "auto" = follow text-field focus, "manual" = ✖ + floating bubble
+        property bool keyPopout: true      // enlarged preview above the pressed key
+        property bool animations: true     // slide in/out, popout and press animations
+        property string keyStyle: "gboard" // "gboard" (flat keys) or "classic" (outlined keys)
     }
 
     readonly property var themeChoices: [
@@ -58,29 +64,92 @@ Window {
     //           deactivate), hidden otherwise; ✖ hides until the next text field.
     // "manual": legacy behaviour; ✖ collapses to a floating bubble.
     // Auto needs KWin to have launched us as its input method; otherwise fall back.
-    readonly property string effectiveShowMode: virtualKeyEngine.hasInputMethod ? prefs.showMode : "manual"
+    // While the screen is locked the keyboard always follows the password field.
+    readonly property string effectiveShowMode: !virtualKeyEngine.hasInputMethod ? "manual"
+                                               : (controller.screenLocked ? "auto" : prefs.showMode)
+    readonly property bool shouldShow: effectiveShowMode === "manual" || !autoHidden
+    // Read at call time (not via the binding above) so handlers never see stale values
+    function computeMode() {
+        return !virtualKeyEngine.hasInputMethod ? "manual" : (controller.screenLocked ? "auto" : prefs.showMode)
+    }
+    function computeShouldShow() {
+        return computeMode() === "manual" || !autoHidden
+    }
+    function computeDesiredRole() {
+        var mode = computeMode()
+        return (controller.screenLocked || (mode === "auto" && prefs.docked)) ? "panel" : "layer"
+    }
+    // Coalesce role + visibility updates; runs after all bindings have settled
+    function scheduleUpdate() { Qt.callLater(mainWindow.updateState) }
+    function updateState() {
+        if (!started) return
+        var role = computeDesiredRole()
+        if (role !== controller.surfaceRole) {
+            controller.applySurfaceRole(mainWindow, role)
+            cardBox.placeDefault()
+        }
+        applyVisibility()
+    }
+
+    // Input panel (KWin-managed, also shown on the lock screen) when docked in automatic
+    // mode, and always while locked; layer-shell overlay for floating / manual use.
+    readonly property string desiredRole: (controller.screenLocked || (effectiveShowMode === "auto" && prefs.docked)) ? "panel" : "layer"
+    onDesiredRoleChanged: scheduleUpdate()
+
+    // 0 = slid out of view, 1 = fully shown
+    property real reveal: 0
+    NumberAnimation {
+        id: revealAnim
+        target: mainWindow
+        property: "reveal"
+        onFinished: if (mainWindow.reveal <= 0.001 && !mainWindow.computeShouldShow()) mainWindow.visible = false
+    }
+
+    function animateReveal(to) {
+        revealAnim.stop()
+        if (!prefs.animations || !mainWindow.visible) {
+            reveal = to
+            if (to === 0 && !computeShouldShow()) mainWindow.visible = false
+            return
+        }
+        var showing = to > reveal
+        revealAnim.from = reveal
+        revealAnim.to = to
+        revealAnim.duration = showing ? 220 : 160
+        revealAnim.easing.type = showing ? Easing.OutCubic : Easing.InCubic
+        revealAnim.start()
+    }
     property bool autoHidden: true
     property bool started: false
 
     // Called from C++ once the layer-shell surface is configured
     function start() {
+        controller.applySurfaceRole(mainWindow, computeDesiredRole())
         started = true
         autoHidden = !virtualKeyEngine.imActive
+        cardBox.placeDefault()
         applyVisibility()
     }
 
     function applyVisibility() {
         if (!started) return
-        var show = effectiveShowMode === "manual" || !autoHidden
-        if (!show) showSettings = false
-        mainWindow.visible = show
+        var show = computeShouldShow()
+        console.info("Keyboard " + (show ? "show" : "hide") + " (mode " + effectiveShowMode + ", role " + controller.surfaceRole + ")")
         if (show) {
+            if (!mainWindow.visible) {
+                reveal = prefs.animations ? 0 : 1
+                mainWindow.visible = true
+            }
             if (isMinimized) minimizedPill.syncMinimizedMask(); else cardBox.syncMask()
+            animateReveal(1)
+        } else {
+            showSettings = false
+            animateReveal(0)
         }
     }
 
     function hideKeyboard() {
-        if (effectiveShowMode === "auto") {
+        if (computeMode() === "auto") {
             autoHidden = true
         } else {
             isMinimized = true
@@ -88,11 +157,11 @@ Window {
         }
     }
 
-    onAutoHiddenChanged: applyVisibility()
+    onAutoHiddenChanged: scheduleUpdate()
     onEffectiveShowModeChanged: {
         if (effectiveShowMode === "auto") isMinimized = false
         else autoHidden = false
-        applyVisibility()
+        scheduleUpdate()
     }
 
     // Focus hops between fields produce deactivate+activate in quick succession;
@@ -106,7 +175,7 @@ Window {
     Connections {
         target: virtualKeyEngine
         function onImActiveChanged() {
-            if (mainWindow.effectiveShowMode !== "auto") return
+            if (mainWindow.computeMode() !== "auto") return
             if (virtualKeyEngine.imActive) {
                 autoHideTimer.stop()
                 mainWindow.autoHidden = false
@@ -197,6 +266,7 @@ Window {
         }
 
         function clamp() {
+            if (mainWindow.panelMode) return
             x = Math.max(0, Math.min(x, mainWindow.width - width))
             y = Math.max(0, Math.min(y, mainWindow.height - height))
         }
@@ -246,17 +316,23 @@ Window {
     Rectangle {
         id: cardBox
         visible: !mainWindow.isMinimized
-        width: controller.sizeMode === "full" ? parent.width :
+        width: controller.sizeMode === "full" ? Screen.width :
                (controller.sizeMode === "onehand" ? 480 : 896)
         height: 356
 
         // Position is managed imperatively (dragging breaks bindings anyway):
         //  - docked:   bottom centre, flush with the screen edge, not draggable
         //  - floating: draggable, but always kept fully on-screen
-        readonly property bool docked: prefs.docked
+        readonly property bool docked: prefs.docked || mainWindow.panelMode
+        readonly property bool draggable: !docked
         readonly property int floatMargin: 40
 
+        // Slide in from the bottom edge (reveal 0 -> 1)
+        transform: Translate { y: (1 - mainWindow.reveal) * (cardBox.height + cardBox.floatMargin) }
+        opacity: 0.35 + 0.65 * mainWindow.reveal
+
         function placeDefault() {
+            if (mainWindow.panelMode) { x = 0; y = 0; return }
             if (docked || controller.sizeMode !== "onehand")
                 x = Math.round((mainWindow.width - width) / 2)
             else
@@ -1162,7 +1238,11 @@ Window {
         // Settings panel: overlays the suggestion bar and keys, below the top bar
         Rectangle {
             id: settingsPanel
-            visible: mainWindow.showSettings
+            visible: opacity > 0
+            opacity: mainWindow.showSettings ? 1 : 0
+            scale: mainWindow.showSettings ? 1 : 0.97
+            Behavior on opacity { enabled: prefs.animations; NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            Behavior on scale { enabled: prefs.animations; NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
             z: 100
             anchors.fill: parent
             anchors.topMargin: 10 + 44 + 4
@@ -1190,7 +1270,7 @@ Window {
                     spacing: 10
 
                     Text {
-                        text: "Theme"
+                        text: "Typing"
                         color: settingsPanel.labelColor
                         font.pixelSize: 13
                         font.bold: true
@@ -1199,15 +1279,29 @@ Window {
                     Flow {
                         width: parent.width
                         spacing: 6
-                        Repeater {
-                            model: mainWindow.themeChoices
-                            delegate: OptionPill {
-                                accent: settingsPanel.accent
-                                labelColor: settingsPanel.labelColor
-                                text: modelData.label
-                                selected: controller.activeTheme === modelData.id
-                                onTapped: mainWindow.selectTheme(modelData.id)
-                            }
+                        OptionPill {
+                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
+                            text: prefs.keyPopout ? "Key popup: on" : "Key popup: off"
+                            selected: prefs.keyPopout
+                            onTapped: prefs.keyPopout = !prefs.keyPopout
+                        }
+                        OptionPill {
+                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
+                            text: prefs.animations ? "Animations: on" : "Animations: off"
+                            selected: prefs.animations
+                            onTapped: prefs.animations = !prefs.animations
+                        }
+                        OptionPill {
+                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
+                            text: "Keys: Gboard"
+                            selected: prefs.keyStyle === "gboard"
+                            onTapped: prefs.keyStyle = "gboard"
+                        }
+                        OptionPill {
+                            accent: settingsPanel.accent; labelColor: settingsPanel.labelColor
+                            text: "Keys: Classic"
+                            selected: prefs.keyStyle === "classic"
+                            onTapped: prefs.keyStyle = "classic"
                         }
                     }
 
@@ -1271,6 +1365,29 @@ Window {
                         color: settingsPanel.labelColor
                         opacity: 0.7
                         font.pixelSize: 11
+                    }
+
+                    Text {
+                        topPadding: 6
+                        text: "Theme"
+                        color: settingsPanel.labelColor
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 6
+                        Repeater {
+                            model: mainWindow.themeChoices
+                            delegate: OptionPill {
+                                accent: settingsPanel.accent
+                                labelColor: settingsPanel.labelColor
+                                text: modelData.label
+                                selected: controller.activeTheme === modelData.id
+                                onTapped: mainWindow.selectTheme(modelData.id)
+                            }
+                        }
                     }
                 }
             }

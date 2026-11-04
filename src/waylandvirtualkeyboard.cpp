@@ -1,6 +1,6 @@
 #include "waylandvirtualkeyboard.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
-#include "input-method-unstable-v1-client-protocol.h"
+#include "wayland-input-method-unstable-v1-client-protocol.h"
 #include "securebuffer.h"
 
 #include <QDebug>
@@ -256,6 +256,7 @@ void WaylandVirtualKeyboard::imActivate(void *data, struct zwp_input_method_v1 *
     wl_array_release(&map);
     wl_display_flush(self->m_display);
 
+    qInfo() << "Input method: text field focused (activate)";
     emit self->imActiveChanged();
 }
 
@@ -269,6 +270,7 @@ void WaylandVirtualKeyboard::imDeactivate(void *data, struct zwp_input_method_v1
     zwp_input_method_context_v1_destroy(self->m_imContext);
     self->m_imContext = nullptr;
     self->setSensitiveInput(false);
+    qInfo() << "Input method: text field unfocused (deactivate)";
     emit self->imActiveChanged();
 }
 

@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 find_package(ECM 6.0.0 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml DBus GuiPrivate)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml DBus GuiPrivate WaylandClient WaylandClientPrivate)
 find_package(KF6CoreAddons REQUIRED)
 find_package(KF6I18n REQUIRED)
 find_package(PkgConfig REQUIRED)
@@ -37,21 +37,10 @@ add_custom_command(
     DEPENDS ${PROTOCOL_XML}
 )
 
-# input-method-unstable-v1: KWin's protocol for the virtual keyboard process
+# input-method-unstable-v1: KWin's protocols for the virtual keyboard process
+# (zwp_input_method_v1 for typing, zwp_input_panel_v1 for the keyboard surface)
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 set(IM_XML "${WAYLAND_PROTOCOLS_DIR}/unstable/input-method/input-method-unstable-v1.xml")
-set(IM_CODE "${CMAKE_CURRENT_BINARY_DIR}/input-method-unstable-v1-protocol.c")
-set(IM_HEADER "${CMAKE_CURRENT_BINARY_DIR}/input-method-unstable-v1-client-protocol.h")
-add_custom_command(
-    OUTPUT ${IM_HEADER}
-    COMMAND ${WAYLAND_SCANNER_EXECUTABLE} client-header ${IM_XML} ${IM_HEADER}
-    DEPENDS ${IM_XML}
-)
-add_custom_command(
-    OUTPUT ${IM_CODE}
-    COMMAND ${WAYLAND_SCANNER_EXECUTABLE} private-code ${IM_XML} ${IM_CODE}
-    DEPENDS ${IM_XML}
-)
 
 # Optional LayerShellQt support
 find_package(LayerShellQt)
@@ -69,9 +58,11 @@ qt_add_executable(tastiera
     src/klipperintegration.h
     ${PROTOCOL_CODE}
     ${PROTOCOL_HEADER}
-    ${IM_CODE}
-    ${IM_HEADER}
+    src/inputpanelshell.cpp
+    src/inputpanelshell.h
 )
+
+qt6_generate_wayland_protocol_client_sources(tastiera PRIVATE_CODE NO_INCLUDE_CORE_ONLY FILES ${IM_XML})
 
 target_include_directories(tastiera PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -85,6 +76,8 @@ target_link_libraries(tastiera PRIVATE
     Qt6::Quick
     Qt6::Qml
     Qt6::DBus
+    Qt6::WaylandClient
+    Qt6::WaylandClientPrivate
     KF6::CoreAddons
     KF6::I18n
     Wayland::Client
@@ -124,3 +117,10 @@ qt_add_qml_module(tastiera
 include(GNUInstallDirs)
 install(TARGETS tastiera RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES tastiera.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+
+# Make the Plasma Login Manager greeter use Tastiera (it hard-codes plasma-keyboard)
+option(TASTIERA_LOGIN_SCREEN "Install a drop-in so Plasma Login Manager uses Tastiera" ON)
+if(TASTIERA_LOGIN_SCREEN)
+    install(FILES packaging/plasma-login/tastiera.conf
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/user/plasma-login-kwin_wayland.service.d)
+endif()
