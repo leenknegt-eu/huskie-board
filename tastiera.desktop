@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Tastiera Touch Keyboard
+Name[it]=Tastiera Touch
+Comment=Floating touch keyboard for KDE Plasma 6 Wayland
+Exec=tastiera
+Icon=input-keyboard-virtual
+Type=Application
+Terminal=false
+NoDisplay=true
+Categories=Qt;KDE;Utility;
+X-KDE-Wayland-VirtualKeyboard=true

@@ -2,6 +2,12 @@
 
 All notable changes to **Plasma Keyboard** will be documented in this file.
 
+## [Unreleased] (fork)
+
+- Renamed binary/desktop entry to `tastiera` to avoid clashing with KDE's `plasma-keyboard` (Plasma 6.8+).
+- `make install` now installs the binary and `tastiera.desktop`.
+- Added Arch Linux PKGBUILD in `packaging/arch/`.
+
 ## [v0.91] - 2026-08-07
 
 ### 🛡️ Security & Process Protection

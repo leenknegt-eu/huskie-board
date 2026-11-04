@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(plasma-keyboard VERSION 0.91 LANGUAGES C CXX)
+project(tastiera VERSION 0.91 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,7 +40,7 @@ add_custom_command(
 # Optional LayerShellQt support
 find_package(LayerShellQt)
 
-qt_add_executable(plasma-keyboard
+qt_add_executable(tastiera
     src/main.cpp
     src/securebuffer.h
     src/keyboardcontroller.cpp
@@ -55,12 +55,12 @@ qt_add_executable(plasma-keyboard
     ${PROTOCOL_HEADER}
 )
 
-target_include_directories(plasma-keyboard PRIVATE
+target_include_directories(tastiera PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(plasma-keyboard PRIVATE
+target_link_libraries(tastiera PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::GuiPrivate
@@ -73,11 +73,11 @@ target_link_libraries(plasma-keyboard PRIVATE
 )
 
 if(LayerShellQt_FOUND)
-    target_link_libraries(plasma-keyboard PRIVATE LayerShellQt::Interface)
-    target_compile_definitions(plasma-keyboard PRIVATE HAVE_LAYERSHELLQT=1)
+    target_link_libraries(tastiera PRIVATE LayerShellQt::Interface)
+    target_compile_definitions(tastiera PRIVATE HAVE_LAYERSHELLQT=1)
 endif()
 
-qt_add_qml_module(plasma-keyboard
+qt_add_qml_module(tastiera
     URI "org.kde.plasma.keyboard"
     VERSION 1.0
     QML_FILES
@@ -96,4 +96,6 @@ qt_add_qml_module(plasma-keyboard
         qml/themes/NordFrost.qml
 )
 
-install(TARGETS plasma-keyboard DESTINATION bin)
+include(GNUInstallDirs)
+install(TARGETS tastiera RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES tastiera.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)

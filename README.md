@@ -49,6 +49,19 @@
 
 ## 🛠️ Build & Installation
 
+> **Fork note:** this fork renames the binary and desktop entry to `tastiera` so it no longer
+> collides with KDE's official `plasma-keyboard` package (Plasma 6.8+), and adds an Arch package.
+
+### Arch Linux
+
+```bash
+git clone https://github.com/leenknegt-eu/tastiera.git
+cd tastiera/packaging/arch
+makepkg -si
+```
+
+Then select **Tastiera Touch Keyboard** in System Settings → Keyboard → Virtual Keyboard.
+
 ### Requirements
 - **Qt 6** (Qt6Gui, Qt6Qml, Qt6Quick, Qt6DBus, Qt6WaylandClient)
 - **KDE Frameworks 6** (KCoreAddons, KI18n, LayerShellQt)
@@ -71,7 +84,7 @@ make -j$(nproc)
 ```bash
 export XDG_RUNTIME_DIR=/run/user/10000
 export WAYLAND_DISPLAY=wayland-0
-./plasma-keyboard
+./tastiera
 ```
 
 To deploy directly to a postmarketOS / Linux tablet via SSH:

@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     app.setOrganizationName("KDE");
     app.setOrganizationDomain("kde.org");
-    app.setApplicationName("plasma-keyboard");
-    app.setDesktopFileName("org.kde.plasma-keyboard");
+    app.setApplicationName("tastiera");
+    app.setDesktopFileName("tastiera");
 
     qmlRegisterType<KeyboardController>("org.kde.plasma.keyboard", 1, 0, "KeyboardController");
     qmlRegisterType<WaylandVirtualKeyboard>("org.kde.plasma.keyboard", 1, 0, "WaylandVirtualKeyboard");
