@@ -55,6 +55,10 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
 - Tapping an already focused text field brings the keyboard back after hiding it (⌄): the dismissal is
   reported to KWin (`org.kde.kwin.VirtualKeyboard.active = false`), so KWin re-activates the input method on
   the next tap. Needed on the login/lock screen, where the password field cannot be left.
+- Fixed keys staying highlighted: a key held while the keyboard hid never received its release and showed
+  as pressed the next time; keys now reset on hide/show, ignore stale releases, and key repeat stops on hide.
+  Also fixed a ripple animation race that could leave a faint highlight after very quick taps.
+- Removed the keyboard size-change animation (it was choppy).
 
 ## [v0.91] - 2026-08-07
 

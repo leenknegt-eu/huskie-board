@@ -37,7 +37,26 @@ Rectangle {
     readonly property bool gboardStyle: typeof prefs === "undefined" || prefs.keyStyle !== "classic"
     readonly property bool animate: typeof prefs === "undefined" || prefs.animations
     readonly property bool popoutEnabled: typeof prefs === "undefined" || prefs.keyPopout
-    readonly property bool isPressed: mouseArea.pressed
+    // Our own press state rather than mouseArea.pressed: if the window is hidden while a
+    // finger is down, no release ever arrives and MouseArea would stay "pressed" forever
+    // (key shown highlighted the next time the keyboard appears).
+    property bool touching: false
+    readonly property bool isPressed: touching
+
+    function resetTouch() {
+        touching = false
+        longPressTimer.stop()
+        isAccentOverlayOpen = false
+        selectedAccentIndex = -1
+        rippleIn.stop()
+        rippleOut.stop()
+        ripple.opacity = 0
+    }
+
+    Connections {
+        target: root.Window.window
+        function onVisibleChanged() { root.resetTouch() }
+    }
 
     readonly property var effectiveAccents: (accents && accents.length) ? accents
         : ((autoAccents && !isSpecial && !isCustomAction) ? Accents.variants(label, digitAccent) : [])
@@ -114,20 +133,21 @@ Rectangle {
                 c.fill()
             }
         }
-        ParallelAnimation {
-            id: rippleIn
-            NumberAnimation { target: ripple; property: "r"; from: 0; to: ripple.maxR; duration: 260; easing.type: Easing.OutCubic }
-            NumberAnimation { target: ripple; property: "opacity"; from: 0.16; to: 0.12; duration: 260 }
-        }
-        NumberAnimation { id: rippleOut; target: ripple; property: "opacity"; to: 0; duration: 220 }
+        // Expansion only animates the radius; only the release fade touches opacity,
+        // so a quick tap can never leave the ripple stuck visible.
+        NumberAnimation { id: rippleIn; target: ripple; property: "r"; from: 0; to: ripple.maxR; duration: 260; easing.type: Easing.OutCubic }
+        NumberAnimation { id: rippleOut; target: ripple; property: "opacity"; to: 0; duration: 200 }
 
         function start(x, y) {
             if (!root.animate) return
             rippleOut.stop()
             ripple.cx = x; ripple.cy = y
+            ripple.opacity = 0.14
             rippleIn.restart()
         }
-        function end() { if (root.animate) rippleOut.restart() }
+        function end() {
+            if (ripple.opacity > 0) rippleOut.restart()
+        }
     }
 
     // ---- Label / icon ---------------------------------------------------------
@@ -346,6 +366,7 @@ Rectangle {
         anchors.fill: parent
 
         onPressed: (mouse) => {
+            root.touching = true
             rippleClip.start(mouse.x, mouse.y)
             root.pressed()
             longPressTimer.start()
@@ -367,6 +388,9 @@ Rectangle {
         onReleased: {
             rippleClip.end()
             longPressTimer.stop()
+            // stale release for a press that was reset (window hidden meanwhile): ignore
+            if (!root.touching) return
+            root.touching = false
             if (gestureEngine) {
                 gestureEngine.endTouch()
             }
@@ -394,6 +418,7 @@ Rectangle {
         }
 
         onCanceled: {
+            root.touching = false
             rippleClip.end()
             longPressTimer.stop()
             if (root.isAccentOverlayOpen) root.commitAccent()

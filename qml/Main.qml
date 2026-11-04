@@ -166,6 +166,10 @@ Window {
     }
 
     onAutoHiddenChanged: scheduleUpdate()
+
+    // A key held while the keyboard disappears never gets its release: make sure
+    // auto-repeat (backspace / arrows) can't keep firing in the background.
+    onVisibleChanged: if (!visible) { controller.stopBackspaceTimer(); controller.stopKeyRepeat() }
     onEffectiveShowModeChanged: {
         if (effectiveShowMode === "auto") isMinimized = false
         else autoHidden = false
@@ -341,7 +345,6 @@ Window {
         // while settings are open the card grows (upwards) so nothing needs scrolling
         height: Math.min(mainWindow.showSettings ? Math.max(keyboardHeight, 600) : keyboardHeight,
                          Screen.height * 0.8)
-        Behavior on height { enabled: prefs.animations; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
         // Position is managed imperatively (dragging breaks bindings anyway):
         //  - docked:   bottom centre, flush with the screen edge, not draggable
