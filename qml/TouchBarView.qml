@@ -1,11 +1,10 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
 
-Rectangle {
+// Gboard-style icon toolbar above the keys
+Item {
     id: touchBar
     height: 44
-    color: "transparent"
 
     property var currentTheme
     property var controller
@@ -14,240 +13,85 @@ Rectangle {
     property var cardBox
     property var mainWindow
 
+    readonly property color ink: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
+    readonly property color accent: currentTheme ? currentTheme.accentColor : "#00a2ed"
+    // flat toolbar: no circle behind idle icons
+    readonly property color idle: "transparent"
+
+    readonly property var sizeModes: ["normal", "full", "onehand"]
+
     RowLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 6
 
-        // Left section: drag grip (floating mode only)
-        Rectangle {
+        // Drag grip (floating mode only)
+        Item {
             visible: !!(cardBox && cardBox.draggable)
-            width: titleText.width + 16
-            height: 34
-            color: "transparent"
-            Layout.alignment: Qt.AlignVCenter
-
+            Layout.preferredWidth: 30
+            Layout.fillHeight: true
             Text {
-                id: titleText
+                anchors.centerIn: parent
                 text: ":::"
-                color: currentTheme ? currentTheme.textColor : "#1e1e1e"
-                font.family: currentTheme ? currentTheme.fontFamily : "sans-serif"
+                color: touchBar.ink
                 font.pixelSize: 14
                 font.bold: true
-                anchors.centerIn: parent
             }
-
             MouseArea {
-                id: dragMouseArea
                 anchors.fill: parent
                 cursorShape: Qt.SizeAllCursor
                 property point startPos: "0,0"
-
-                onPressed: (mouse) => {
-                    startPos = Qt.point(mouse.x, mouse.y)
-                }
-
+                onPressed: (mouse) => { startPos = Qt.point(mouse.x, mouse.y) }
                 onPositionChanged: (mouse) => {
-                    if (pressed && cardBox) {
-                        // moveBy() keeps the card on-screen and ignores drags when docked
-                        cardBox.moveBy(mouse.x - startPos.x, mouse.y - startPos.y)
-                    }
+                    // moveBy() keeps the card on-screen and ignores drags when docked
+                    if (pressed && cardBox) cardBox.moveBy(mouse.x - startPos.x, mouse.y - startPos.y)
                 }
             }
         }
 
-        // Center section: Mode Pills in Dark Container
-        Rectangle {
-            Layout.fillWidth: true
-            height: 34
-            radius: 17
-            color: currentTheme && currentTheme.headerPillBg ? currentTheme.headerPillBg : "#434a56"
-            Layout.alignment: Qt.AlignVCenter
-
-            Flickable {
-                anchors.fill: parent
-                anchors.leftMargin: 6
-                anchors.rightMargin: 6
-                contentWidth: pillRow.width
-                clip: true
-
-                Row {
-                    id: pillRow
-                    spacing: 4
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    // ABC Pill
-                    Rectangle {
-                        width: 48
-                        height: 26
-                        radius: 13
-                        color: controller && controller.layoutMode === "abc" ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "ABC"
-                            color: controller && controller.layoutMode === "abc" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: if (controller) controller.layoutMode = "abc"
-                        }
-                    }
-
-                    // Klipper Pill
-                    Rectangle {
-                        width: 64
-                        height: 26
-                        radius: 13
-                        color: controller && controller.layoutMode === "klipper" ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "📋 Klipper"
-                            color: controller && controller.layoutMode === "klipper" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: if (controller) controller.layoutMode = "klipper"
-                        }
-                    }
-
-                    // Terminal Mode Pill (>_ Term)
-                    Rectangle {
-                        width: 64
-                        height: 26
-                        radius: 13
-                        color: controller && controller.isTerminalMode ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: ">_ Term"
-                            color: controller && controller.isTerminalMode ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: if (controller) controller.isTerminalMode = !controller.isTerminalMode
-                        }
-                    }
-
-                }
-            }
-        }
-
-        // Right section: Size Mode Segmented Switcher in Dark Container
-        Rectangle {
-            width: 230
-            height: 34
-            radius: 17
-            color: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
-            Layout.alignment: Qt.AlignVCenter
-
-            Row {
-                anchors.fill: parent
-                anchors.margins: 3
-                spacing: 2
-
-                // Normal
-                Rectangle {
-                    width: (parent.width - 6) / 3
-                    height: parent.height
-                    radius: 14
-                    color: controller && controller.sizeMode === "normal" ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Normal"
-                        color: controller && controller.sizeMode === "normal" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                        font.pixelSize: 11
-                        font.bold: controller && controller.sizeMode === "normal"
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: if (controller) controller.sizeMode = "normal"
-                    }
-                }
-
-                // Extended (Full)
-                Rectangle {
-                    width: (parent.width - 6) / 3
-                    height: parent.height
-                    radius: 14
-                    color: controller && controller.sizeMode === "full" ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Extended"
-                        color: controller && controller.sizeMode === "full" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                        font.pixelSize: 11
-                        font.bold: controller && controller.sizeMode === "full"
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: if (controller) controller.sizeMode = "full"
-                    }
-                }
-
-                // 1-Handed
-                Rectangle {
-                    width: (parent.width - 6) / 3
-                    height: parent.height
-                    radius: 14
-                    color: controller && controller.sizeMode === "onehand" ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "📱 1-Handed"
-                        color: controller && controller.sizeMode === "onehand" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                        font.pixelSize: 10
-                        font.bold: controller && controller.sizeMode === "onehand"
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: if (controller) controller.sizeMode = "onehand"
-                    }
-                }
-            }
-        }
-
-        // Dock / float toggle: icon shows the current state
         IconButton {
-            Layout.alignment: Qt.AlignVCenter
+            icon: "clipboard"
+            active: !!(controller && controller.layoutMode === "klipper")
+            iconColor: touchBar.ink; activeColor: touchBar.accent; idleColor: touchBar.idle
+            onClicked: if (controller) controller.layoutMode = (controller.layoutMode === "klipper" ? "abc" : "klipper")
+        }
+
+        IconButton {
+            icon: "terminal"
+            active: !!(controller && controller.isTerminalMode)
+            iconColor: touchBar.ink; activeColor: touchBar.accent; idleColor: touchBar.idle
+            onClicked: if (controller) controller.isTerminalMode = !controller.isTerminalMode
+        }
+
+        Item { Layout.fillWidth: true }
+
+        // Layout size: tap to cycle normal -> extended -> one-handed
+        IconButton {
+            icon: controller ? ("size-" + controller.sizeMode) : "size-normal"
+            iconColor: touchBar.ink; activeColor: touchBar.accent; idleColor: touchBar.idle
+            onClicked: {
+                if (!controller) return
+                var i = touchBar.sizeModes.indexOf(controller.sizeMode)
+                controller.sizeMode = touchBar.sizeModes[(i + 1) % touchBar.sizeModes.length]
+            }
+        }
+
+        // Dock / float: icon shows the current state
+        IconButton {
             icon: (cardBox && cardBox.docked) ? "docked" : "floating"
-            iconColor: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
-            activeColor: currentTheme ? currentTheme.accentColor : "#00a2ed"
-            idleColor: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
+            iconColor: touchBar.ink; activeColor: touchBar.accent; idleColor: touchBar.idle
             onClicked: if (mainWindow) mainWindow.toggleDocked()
         }
 
-        // Settings (theme, typing, show mode)
         IconButton {
-            Layout.alignment: Qt.AlignVCenter
             icon: "gear"
             active: !!(mainWindow && mainWindow.showSettings)
-            iconColor: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
-            activeColor: currentTheme ? currentTheme.accentColor : "#00a2ed"
-            idleColor: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
+            iconColor: touchBar.ink; activeColor: touchBar.accent; idleColor: touchBar.idle
             onClicked: if (mainWindow) mainWindow.showSettings = !mainWindow.showSettings
         }
 
-        // Hide keyboard
         IconButton {
-            Layout.alignment: Qt.AlignVCenter
             icon: "hide"
-            iconColor: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
-            activeColor: currentTheme ? currentTheme.accentColor : "#00a2ed"
-            idleColor: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
+            iconColor: touchBar.ink; activeColor: touchBar.accent; idleColor: touchBar.idle
             onClicked: if (mainWindow) mainWindow.hideKeyboard()
         }
     }

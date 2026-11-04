@@ -56,25 +56,45 @@ Rectangle {
                 ctx.fillRule = Qt.OddEvenFill
                 ctx.fill()
             } else if (btn.icon === "docked" || btn.icon === "floating") {
-                // a small keyboard: resting on the baseline (docked) or lifted above it (floating)
-                var lift = btn.icon === "floating" ? 4 : 0
-                var kw = 14, kh = 8
-                var kx = cx - kw / 2, ky = 15 - kh - lift
+                // a screen; docked = bar along its bottom edge, floating = block hovering inside
                 ctx.beginPath()
-                ctx.rect(kx, ky, kw, kh)
+                ctx.rect(2.5, 3.5, 15, 13)
                 ctx.stroke()
-                ctx.beginPath()                       // key dots
-                for (var k = 0; k < 3; k++) ctx.rect(kx + 3 + k * 3.5, ky + 2.6, 1.4, 1.4)
+                ctx.beginPath()
+                if (btn.icon === "docked") ctx.rect(2.5, 12, 15, 4.5)
+                else ctx.rect(6, 8.5, 8, 4)
                 ctx.fill()
-                ctx.beginPath()                       // baseline (screen edge)
-                ctx.moveTo(2, 17.5)
-                ctx.lineTo(18, 17.5)
+            } else if (btn.icon === "clipboard") {
+                ctx.beginPath()
+                ctx.rect(4.5, 4, 11, 14)
                 ctx.stroke()
-                if (lift > 0) {                       // up arrow hint
-                    ctx.beginPath()
-                    ctx.moveTo(cx - 2.5, ky - 1.5); ctx.lineTo(cx, ky - 4); ctx.lineTo(cx + 2.5, ky - 1.5)
-                    ctx.stroke()
-                }
+                ctx.beginPath()
+                ctx.rect(7.5, 2.5, 5, 3)
+                ctx.fill()
+                ctx.beginPath()
+                ctx.moveTo(7.5, 9.5); ctx.lineTo(12.5, 9.5)
+                ctx.moveTo(7.5, 13); ctx.lineTo(12.5, 13)
+                ctx.stroke()
+            } else if (btn.icon === "terminal") {
+                ctx.beginPath()
+                ctx.rect(2.5, 3.5, 15, 13)
+                ctx.stroke()
+                ctx.beginPath()
+                ctx.moveTo(5.5, 7.5); ctx.lineTo(8.5, 10); ctx.lineTo(5.5, 12.5)
+                ctx.moveTo(10, 13); ctx.lineTo(14.5, 13)
+                ctx.stroke()
+            } else if (btn.icon === "size-normal" || btn.icon === "size-full" || btn.icon === "size-onehand") {
+                // keyboard outline sized like the mode; one-handed is pushed to the right
+                var w = btn.icon === "size-full" ? 17 : (btn.icon === "size-onehand" ? 8 : 12)
+                var x0 = btn.icon === "size-onehand" ? 18 - w : cx - w / 2
+                ctx.beginPath()
+                ctx.rect(x0, 6, w, 9)
+                ctx.stroke()
+                ctx.beginPath()
+                var n = Math.max(2, Math.floor(w / 3.2))
+                for (var j = 0; j < n; j++) ctx.rect(x0 + 2 + j * ((w - 4) / n), 8.6, 1.4, 1.4)
+                ctx.rect(x0 + w / 2 - 2.5, 11.8, 5, 1.2)
+                ctx.fill()
             } else if (btn.icon === "hide") {
                 ctx.beginPath()
                 ctx.moveTo(cx - 6, cy - 3)

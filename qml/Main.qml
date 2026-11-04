@@ -32,6 +32,7 @@ Window {
         property bool keyPopout: true      // enlarged preview above the pressed key
         property bool animations: true     // slide in/out, popout and press animations
         property string keyStyle: "gboard" // "gboard" (flat keys) or "classic" (outlined keys)
+        property real heightScale: 1.0    // key area height multiplier (0.7 - 1.5)
     }
 
     readonly property var themeChoices: [
@@ -319,12 +320,15 @@ Window {
     // Floating Card Container (Matches Screenshots Floating Design)
     Rectangle {
         id: cardBox
+        objectName: "cardBox"
         visible: !mainWindow.isMinimized
         width: controller.sizeMode === "full" ? Screen.width :
                (controller.sizeMode === "onehand" ? 480 : 896)
         // Extended = 6-row PC layout. The terminal / Ctrl-Alt strip only takes space when shown.
         readonly property bool showStrip: controller.isTerminalMode || mainWindow.ctrlActive || mainWindow.altActive
-        height: (controller.sizeMode === "full" ? 410 : 312) + (showStrip ? 44 : 0)
+        readonly property real keyAreaBase: controller.sizeMode === "full" ? 338 : 240
+        height: Math.min(72 + (showStrip ? 44 : 0) + Math.round(keyAreaBase * prefs.heightScale),
+                         Screen.height * 0.8)
 
         // Position is managed imperatively (dragging breaks bindings anyway):
         //  - docked:   bottom centre, flush with the screen edge, not draggable
@@ -381,7 +385,10 @@ Window {
         color: mainWindow.activeTheme ? mainWindow.activeTheme.backgroundColor : "#e3dfd8"
         radius: controller.sizeMode === "full" ? 0 : (mainWindow.activeTheme && mainWindow.activeTheme.cardRadius !== undefined ? mainWindow.activeTheme.cardRadius : 24)
         border.color: mainWindow.activeTheme ? mainWindow.activeTheme.cardBorderColor : "#c8c3b9"
-        border.width: controller.sizeMode === "full" ? 0 : 1
+        // Docked: sit flush on the screen edge (no bottom rounding, no outline)
+        bottomLeftRadius: docked ? 0 : radius
+        bottomRightRadius: docked ? 0 : radius
+        border.width: (controller.sizeMode === "full" || docked) ? 0 : 1
 
         SwipeCanvas {
             gestureEngine: gestureEngine
@@ -560,307 +567,13 @@ Window {
                                   (controller.layoutMode === "emoji" ? 4 :
                                   (controller.layoutMode === "klipper" ? 5 : 0)))))
 
-                    // View 0: ABC QWERTY Standard / Split Mode
-                    ColumnLayout {
-                        spacing: 6
-
-                        // Row 1: q w e^è r t | y u^ù i^ì o^ò p
-                        RowLayout {
-                            spacing: 6
-                            // Left Bank
-                            Repeater {
-                                model: [
-                                    { k: "q", h: "" }, { k: "w", h: "" }, { k: "e", h: "è", a: ["è", "é", "€"] },
-                                    { k: "r", h: "" }, { k: "t", h: "" }
-                                ]
-                                delegate: KeyButton {
-                                    label: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    textToSend: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    hintAccent: modelData.h
-                                    accents: modelData.a ? modelData.a : []
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    gestureEngine: gestureEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    onKeyTriggered: (key) => {
-                                        var letter = mainWindow.shiftState > 0 ? key.toUpperCase() : key.toLowerCase()
-                                        mainWindow.currentInputBuffer += letter
-                                        gestureEngine.updateCurrentPrefix(mainWindow.currentInputBuffer)
-                                        if (mainWindow.shiftState === 1) {
-                                            mainWindow.shiftState = 0
-                                        }
-                                    }
-                                }
-                            }
-                            // Split Gap
-                            Item {
-                                visible: controller.isSplit
-                                Layout.fillWidth: true
-                            }
-                            // Right Bank
-                            Repeater {
-                                model: [
-                                    { k: "y", h: "" }, { k: "u", h: "ù", a: ["ù", "ú"] },
-                                    { k: "i", h: "ì", a: ["ì", "í"] }, { k: "o", h: "ò", a: ["ò", "ó"] }, { k: "p", h: "" }
-                                ]
-                                delegate: KeyButton {
-                                    label: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    textToSend: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    hintAccent: modelData.h
-                                    accents: modelData.a ? modelData.a : []
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    gestureEngine: gestureEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    onKeyTriggered: (key) => {
-                                        var letter = mainWindow.shiftState > 0 ? key.toUpperCase() : key.toLowerCase()
-                                        mainWindow.currentInputBuffer += letter
-                                        gestureEngine.updateCurrentPrefix(mainWindow.currentInputBuffer)
-                                        if (mainWindow.shiftState === 1) {
-                                            mainWindow.shiftState = 0
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Row 2: a^à s d f g | h j k l
-                        RowLayout {
-                            spacing: 6
-                            // Left Bank
-                            Repeater {
-                                model: [
-                                    { k: "a", h: "à", a: ["à", "á"] }, { k: "s", h: "" }, { k: "d", h: "" },
-                                    { k: "f", h: "" }, { k: "g", h: "" }
-                                ]
-                                delegate: KeyButton {
-                                    label: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    textToSend: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    hintAccent: modelData.h
-                                    accents: modelData.a ? modelData.a : []
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    gestureEngine: gestureEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    onKeyTriggered: (key) => {
-                                        var letter = mainWindow.shiftState > 0 ? key.toUpperCase() : key.toLowerCase()
-                                        mainWindow.currentInputBuffer += letter
-                                        gestureEngine.updateCurrentPrefix(mainWindow.currentInputBuffer)
-                                        if (mainWindow.shiftState === 1) {
-                                            mainWindow.shiftState = 0
-                                        }
-                                    }
-                                }
-                            }
-                            // Split Gap
-                            Item {
-                                visible: controller.isSplit
-                                Layout.fillWidth: true
-                            }
-                            // Right Bank
-                            Repeater {
-                                model: [
-                                    { k: "h", h: "" }, { k: "j", h: "" }, { k: "k", h: "" }, { k: "l", h: "" }
-                                ]
-                                delegate: KeyButton {
-                                    label: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    textToSend: mainWindow.shiftState > 0 ? modelData.k.toUpperCase() : modelData.k
-                                    hintAccent: modelData.h
-                                    accents: modelData.a ? modelData.a : []
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    gestureEngine: gestureEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    onKeyTriggered: (key) => {
-                                        var letter = mainWindow.shiftState > 0 ? key.toUpperCase() : key.toLowerCase()
-                                        mainWindow.currentInputBuffer += letter
-                                        gestureEngine.updateCurrentPrefix(mainWindow.currentInputBuffer)
-                                        if (mainWindow.shiftState === 1) {
-                                            mainWindow.shiftState = 0
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Row 3: ⇧ z x c v | b n m ⌫
-                        RowLayout {
-                            spacing: 6
-                            Timer {
-                                id: shiftDoubleTapTimer
-                                interval: 300
-                                repeat: false
-                            }
-                            KeyButton {
-                                label: mainWindow.shiftState === 2 ? "⇪" : "⇧"
-                                isSpecial: true
-                                isCustomAction: true
-                                isPrimaryAction: mainWindow.shiftState > 0
-                                implicitWidth: controller.isSplit ? 50 : 60
-                                currentTheme: mainWindow.activeTheme
-                                Layout.fillHeight: true
-                                onReleased: {
-                                    if (shiftDoubleTapTimer.running) {
-                                        shiftDoubleTapTimer.stop()
-                                        mainWindow.shiftState = 2 // Caps Lock
-                                    } else {
-                                        shiftDoubleTapTimer.start()
-                                        if (mainWindow.shiftState > 0) {
-                                            mainWindow.shiftState = 0
-                                        } else {
-                                            mainWindow.shiftState = 1
-                                        }
-                                    }
-                                }
-                            }
-                            Repeater {
-                                model: ["z", "x", "c", "v"]
-                                delegate: KeyButton {
-                                    label: mainWindow.shiftState > 0 ? modelData.toUpperCase() : modelData
-                                    textToSend: mainWindow.shiftState > 0 ? modelData.toUpperCase() : modelData
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    gestureEngine: gestureEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    onKeyTriggered: (key) => {
-                                        var letter = mainWindow.shiftState > 0 ? key.toUpperCase() : key.toLowerCase()
-                                        mainWindow.currentInputBuffer += letter
-                                        gestureEngine.updateCurrentPrefix(mainWindow.currentInputBuffer)
-                                        if (mainWindow.shiftState === 1) {
-                                            mainWindow.shiftState = 0
-                                        }
-                                    }
-                                }
-                            }
-                            // Split Gap
-                            Item {
-                                visible: controller.isSplit
-                                Layout.fillWidth: true
-                            }
-                            Repeater {
-                                model: ["b", "n", "m"]
-                                delegate: KeyButton {
-                                    label: mainWindow.shiftState > 0 ? modelData.toUpperCase() : modelData
-                                    textToSend: mainWindow.shiftState > 0 ? modelData.toUpperCase() : modelData
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    gestureEngine: gestureEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    onKeyTriggered: (key) => {
-                                        var letter = mainWindow.shiftState > 0 ? key.toUpperCase() : key.toLowerCase()
-                                        mainWindow.currentInputBuffer += letter
-                                        gestureEngine.updateCurrentPrefix(mainWindow.currentInputBuffer)
-                                        if (mainWindow.shiftState === 1) {
-                                            mainWindow.shiftState = 0
-                                        }
-                                    }
-                                }
-                            }
-                            KeyButton {
-                                label: "⌫"
-                                isSpecial: true
-                                isBackspace: true
-                                implicitWidth: controller.isSplit ? 50 : 70
-                                currentTheme: mainWindow.activeTheme
-                                controller: controller
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                            }
-                        }
-
-                        // Row 4: ?123/ABC 😊 , spazio | . ↵ Close(✖)
-                        RowLayout {
-                            spacing: 6
-                            KeyButton {
-                                label: controller.layoutMode === "abc" ? "?123" : "ABC"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 55
-                                currentTheme: mainWindow.activeTheme
-                                onReleased: {
-                                    if (controller.layoutMode === "abc") {
-                                        controller.layoutMode = "symbols"
-                                    } else {
-                                        controller.layoutMode = "abc"
-                                    }
-                                }
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "😊"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 44
-                                currentTheme: mainWindow.activeTheme
-                                onReleased: controller.layoutMode = "emoji"
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: ","
-                                implicitWidth: 44
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "space"
-                                textToSend: " "
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                onKeyTriggered: {
-                                    mainWindow.currentInputBuffer = ""
-                                    gestureEngine.updateCurrentPrefix("")
-                                }
-                            }
-                            // Split Gap
-                            Item {
-                                visible: controller.isSplit
-                                Layout.preferredWidth: controller.isSplit ? 160 : 0
-                            }
-                            KeyButton {
-                                label: "."
-                                implicitWidth: 44
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                                onKeyTriggered: {
-                                    mainWindow.currentInputBuffer = ""
-                                    gestureEngine.updateCurrentPrefix("")
-                                }
-                            }
-                            KeyButton {
-                                label: "↵"
-                                textToSend: "\n"
-                                isSpecial: true
-                                isPrimaryAction: true
-                                implicitWidth: controller.isSplit ? 50 : 65
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                                onKeyTriggered: {
-                                    mainWindow.currentInputBuffer = ""
-                                    gestureEngine.updateCurrentPrefix("")
-                                }
-                            }
-                            // Hide Keyboard Button ✖ (auto: hide until next text field, manual: floating bubble)
-                            KeyButton {
-                                label: "✖"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 48
-                                currentTheme: mainWindow.activeTheme
-                                Layout.fillHeight: true
-                                onReleased: mainWindow.hideKeyboard()
-                            }
-                        }
+                    // View 0: phone-style QWERTY
+                    QwertyLayout {
+                        host: mainWindow
+                        currentTheme: mainWindow.activeTheme
+                        vk: virtualKeyEngine
+                        controller: controller
+                        gestureEngine: gestureEngine
                     }
 
                     // View 1: IT Accenti Diretti
@@ -1053,35 +766,71 @@ Window {
                         }
                     }
 
-                    // View 4: Emoji Grid
-                    Flickable {
-                        contentHeight: emojiGrid.height
-                        clip: true
+                    // View 4: Emoji grid + ABC / space / backspace row
+                    ColumnLayout {
+                        spacing: 6
 
-                        GridLayout {
-                            id: emojiGrid
-                            columns: 8
-                            rowSpacing: 6
-                            columnSpacing: 6
-                            width: parent.width
+                        Flickable {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            contentHeight: emojiGrid.height
+                            clip: true
 
-                            Repeater {
-                                model: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
-                                        "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
-                                        "😘", "😗", "😙", "😚", "😋", "😛", "😜", "🤪",
-                                        "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒",
-                                        "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏",
-                                        "🔥", "✨", "🎉", "❤️", "💯", "🚀", "💡", "⚠️"]
-                                delegate: KeyButton {
-                                    label: modelData
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    Layout.fillWidth: true
-                                    implicitHeight: 48
-                                    onReleased: {
-                                        virtualKeyEngine.sendEmoji(modelData)
+                            GridLayout {
+                                id: emojiGrid
+                                columns: 8
+                                rowSpacing: 6
+                                columnSpacing: 6
+                                width: parent.width
+
+                                Repeater {
+                                    model: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
+                                            "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
+                                            "😘", "😗", "😙", "😚", "😋", "😛", "😜", "🤪",
+                                            "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒",
+                                            "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏",
+                                            "🔥", "✨", "🎉", "❤️", "💯", "🚀", "💡", "⚠️"]
+                                    delegate: KeyButton {
+                                        label: modelData
+                                        isCustomAction: true      // sent below (once)
+                                        currentTheme: mainWindow.activeTheme
+                                        vk: virtualKeyEngine
+                                        Layout.fillWidth: true
+                                        implicitHeight: 48
+                                        onReleased: virtualKeyEngine.sendEmoji(modelData)
                                     }
                                 }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 48
+                            spacing: 6
+                            KeyButton {
+                                label: "ABC"
+                                isSpecial: true
+                                isCustomAction: true
+                                implicitWidth: 72
+                                currentTheme: mainWindow.activeTheme
+                                onReleased: controller.layoutMode = "abc"
+                            }
+                            KeyButton {
+                                label: " "
+                                textToSend: " "
+                                autoAccents: false
+                                Layout.fillWidth: true
+                                currentTheme: mainWindow.activeTheme
+                                vk: virtualKeyEngine
+                            }
+                            KeyButton {
+                                icon: "backspace"
+                                isSpecial: true
+                                isBackspace: true
+                                implicitWidth: 72
+                                currentTheme: mainWindow.activeTheme
+                                controller: controller
+                                vk: virtualKeyEngine
                             }
                         }
                     }
@@ -1271,6 +1020,25 @@ Window {
                             selected: prefs.keyStyle === "classic"
                             onTapped: prefs.keyStyle = "classic"
                         }
+                    }
+
+                    Text {
+                        topPadding: 6
+                        text: "Keyboard height  " + Math.round(prefs.heightScale * 100) + "%"
+                        color: settingsPanel.labelColor
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+
+                    ValueSlider {
+                        width: Math.min(parent.width, 420)
+                        from: 0.7
+                        to: 1.5
+                        stepSize: 0.05
+                        value: prefs.heightScale
+                        accent: settingsPanel.accent
+                        trackColor: settingsPanel.labelColor
+                        onMoved: (v) => prefs.heightScale = v
                     }
 
                     Text {

@@ -25,7 +25,7 @@ QtObject {
     property int keyBorderWidth: 1
     property int keyRadius: 6
 
-    property color specialKeyBackgroundColor: shade(pal.button, 0.08)
+    property color specialKeyBackgroundColor: shade(pal.button, isDark ? 0.22 : 0.09)
     property color textColor: pal.buttonText
     property color accentColor: pal.highlight
     property color accentTextColor: isDark ? Qt.lighter(pal.highlight, 1.25) : Qt.darker(pal.highlight, 1.25)  // accent-coloured text on keys

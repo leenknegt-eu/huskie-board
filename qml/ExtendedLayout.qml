@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import "Accents.js" as Accents
 
 // Full PC-style layout for "Extended" size: function row, number row, QWERTY with
 // punctuation, Ctrl/Super/Alt and an inverted-T arrow cluster. Keys sit on a
@@ -140,9 +141,14 @@ Item {
                     width: d.w * ext.unit - ext.gap
                     height: rowItem.height
                     label: ext.displayLabel(d)
+                    icon: d.t === "shift" ? (ext.shift ? "shift-on" : "shift")
+                        : (d.t === "bksp" ? "backspace" : (d.t === "enter" ? "enter" : ""))
+                    // hold a letter for accents (no digits here: there is a number row)
+                    accents: (d.t === "char" && ext.isLetter(d.l) && !ext.anyCombo) ? Accents.variants(ext.displayLabel(d), false) : []
+                    onAccentCommitted: ext.releaseLatches()
                     hintAccent: (d.t === "char" && !ext.isLetter(d.l)) ? (ext.shift ? d.l : d.s) : ""
                     isSpecial: d.t !== "char"
-                    isPrimaryAction: ext.isActiveModifier(d)
+                    isPrimaryAction: ext.isActiveModifier(d) || d.t === "enter"
                     isCustomAction: true
                     currentTheme: ext.currentTheme
                     vk: ext.vk

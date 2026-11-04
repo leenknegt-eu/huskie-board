@@ -39,6 +39,14 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
   drawn so it is exactly centred.
 - Removed the word-suggestion row and the Split pill; the terminal / Ctrl-Alt strip only appears when used
   (terminal pills now off by default).
+- Mobile-style long-press alternatives: hold a letter for accents (à á â ä æ ã å ā, è é ê ë ē ė ę €, ç ñ ß ø …),
+  the top row offers its number first (q=1 … p=0), "." and "," offer punctuation. Slide to pick, release to
+  type; the popup stays inside the keyboard and wraps into balanced rows. Works in Extended too.
+- Keyboard height setting (70–150 %, Settings → Keyboard height).
+- Gboard look: rebuilt phone layout on a 10-unit grid (offset middle row, wide Shift/Backspace, ?123 · ☺ · ,
+  · space · . · round Enter), vector Shift/Caps/Backspace/Enter/emoji icons, flat icon toolbar (clipboard,
+  terminal, size, dock, settings, hide), digit hints on the top row, flush docked edge.
+- Emoji view: emoji were typed twice; added ABC / space / backspace row (the old ABC pill is gone).
 
 ## [v0.91] - 2026-08-07
 
