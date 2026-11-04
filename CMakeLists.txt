@@ -78,7 +78,7 @@ if(LayerShellQt_FOUND)
 endif()
 
 qt_add_qml_module(tastiera
-    URI "org.kde.plasma.keyboard"
+    URI "Tastiera"
     VERSION 1.0
     QML_FILES
         qml/Main.qml

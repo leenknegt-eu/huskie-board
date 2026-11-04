@@ -40,10 +40,10 @@ int main(int argc, char *argv[])
     app.setApplicationName("tastiera");
     app.setDesktopFileName("tastiera");
 
-    qmlRegisterType<KeyboardController>("org.kde.plasma.keyboard", 1, 0, "KeyboardController");
-    qmlRegisterType<WaylandVirtualKeyboard>("org.kde.plasma.keyboard", 1, 0, "WaylandVirtualKeyboard");
-    qmlRegisterType<GestureEngine>("org.kde.plasma.keyboard", 1, 0, "GestureEngine");
-    qmlRegisterType<KlipperIntegration>("org.kde.plasma.keyboard", 1, 0, "KlipperIntegration");
+    qmlRegisterType<KeyboardController>("Tastiera", 1, 0, "KeyboardController");
+    qmlRegisterType<WaylandVirtualKeyboard>("Tastiera", 1, 0, "WaylandVirtualKeyboard");
+    qmlRegisterType<GestureEngine>("Tastiera", 1, 0, "GestureEngine");
+    qmlRegisterType<KlipperIntegration>("Tastiera", 1, 0, "KlipperIntegration");
 
     QQmlApplicationEngine engine;
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
         }
     }, Qt::QueuedConnection);
 
-    engine.loadFromModule("org.kde.plasma.keyboard", "Main");
+    engine.loadFromModule("Tastiera", "Main");
 
     return app.exec();
 }
