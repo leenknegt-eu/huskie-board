@@ -77,6 +77,10 @@ if(LayerShellQt_FOUND)
     target_compile_definitions(tastiera PRIVATE HAVE_LAYERSHELLQT=1)
 endif()
 
+# Embed QML under qrc:/qt/qml/ (Qt's default import path). With the old "/" prefix the
+# module is only found when the binary runs from its build directory.
+qt_policy(SET QTP0001 NEW)
+
 qt_add_qml_module(tastiera
     URI "Tastiera"
     VERSION 1.0
