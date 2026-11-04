@@ -8,6 +8,7 @@
 #include <QDBusMessage>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QDBusVariant>
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
 
 #include "inputpanelshell.h"
@@ -57,6 +58,52 @@ KeyboardController::KeyboardController(QObject *parent)
     // Hardware keyboard detection (touchbar auto-switch disabled per user request)
     checkHardwareKeyboard();
     watchScreenLock();
+    watchKWinVirtualKeyboard();
+}
+
+// ---------------------------------------------------------------------------
+// Re-showing after a manual hide: KWin turns "tap on the focused text field"
+// (text-input v3 enable request / v2 show_input_panel) into its own show state,
+// published on D-Bus. We dismiss through KWin and follow its show requests.
+// ---------------------------------------------------------------------------
+static const char *KWIN_SERVICE = "org.kde.KWin";
+static const char *KWIN_VK_PATH = "/VirtualKeyboard";
+static const char *KWIN_VK_IFACE = "org.kde.kwin.VirtualKeyboard";
+
+void KeyboardController::watchKWinVirtualKeyboard()
+{
+    auto bus = QDBusConnection::sessionBus();
+    bus.connect(QLatin1String(KWIN_SERVICE), QLatin1String(KWIN_VK_PATH), QLatin1String(KWIN_VK_IFACE),
+                QStringLiteral("visibleChanged"), this, SLOT(onKWinVirtualKeyboardChanged()));
+    bus.connect(QLatin1String(KWIN_SERVICE), QLatin1String(KWIN_VK_PATH), QLatin1String(KWIN_VK_IFACE),
+                QStringLiteral("activeChanged"), this, SLOT(onKWinVirtualKeyboardChanged()));
+}
+
+void KeyboardController::onKWinVirtualKeyboardChanged()
+{
+    auto msg = QDBusMessage::createMethodCall(QLatin1String(KWIN_SERVICE), QLatin1String(KWIN_VK_PATH),
+                                              QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("GetAll"));
+    msg << QLatin1String(KWIN_VK_IFACE);
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(msg), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *w) {
+        QDBusPendingReply<QVariantMap> reply = *w;
+        w->deleteLater();
+        if (!reply.isValid()) return;
+        const QVariantMap props = reply.value();
+        const bool visible = props.value(QStringLiteral("visible")).toBool();
+        const bool active = props.value(QStringLiteral("active")).toBool();
+        qInfo() << "KWin virtual keyboard: active" << active << "visible" << visible;
+        if (visible && active)
+            emit kwinShowRequested();
+    });
+}
+
+void KeyboardController::dismissInKWin()
+{
+    auto msg = QDBusMessage::createMethodCall(QLatin1String(KWIN_SERVICE), QLatin1String(KWIN_VK_PATH),
+                                              QStringLiteral("org.freedesktop.DBus.Properties"), QStringLiteral("Set"));
+    msg << QLatin1String(KWIN_VK_IFACE) << QStringLiteral("active") << QVariant::fromValue(QDBusVariant(false));
+    QDBusConnection::sessionBus().asyncCall(msg);
 }
 
 // ---------------------------------------------------------------------------

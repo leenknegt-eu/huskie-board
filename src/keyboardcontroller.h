@@ -65,6 +65,10 @@ public:
     // The window keeps its visibility state.
     Q_INVOKABLE void applySurfaceRole(QObject *windowObj, const QString &role);
 
+    // Tell KWin the on-screen keyboard was dismissed (org.kde.kwin.VirtualKeyboard.active = false),
+    // so tapping the still-focused text field makes KWin activate the input method again.
+    Q_INVOKABLE void dismissInKWin();
+
 signals:
     void sizeModeChanged();
     void layoutModeChanged();
@@ -77,16 +81,20 @@ signals:
     void backspaceDeletingWordChanged();
     void screenLockedChanged();
     void surfaceRoleChanged();
+    // KWin wants the keyboard shown (e.g. the user tapped an already focused text field)
+    void kwinShowRequested();
     void triggerBackspace();
     void triggerWordBackspace();
     void triggerKeyRepeat(uint32_t keycode);
 
 private Q_SLOTS:
     void onScreenSaverActiveChanged(bool active);
+    void onKWinVirtualKeyboardChanged();
 
 private:
     void checkHardwareKeyboard();
     void watchScreenLock();
+    void watchKWinVirtualKeyboard();
     bool m_screenLocked = false;
     QString m_surfaceRole;
 

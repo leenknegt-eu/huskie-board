@@ -156,6 +156,9 @@ Window {
     function hideKeyboard() {
         if (computeMode() === "auto") {
             autoHidden = true
+            // Let KWin know too, so tapping the same (still focused) field brings us back.
+            // Essential on the login/lock screen, where the password field can't be left.
+            controller.dismissInKWin()
         } else {
             isMinimized = true
             minimizedPill.syncMinimizedMask()
@@ -226,6 +229,13 @@ Window {
 
     Connections {
         target: controller
+        // KWin asked for the keyboard (e.g. tap on the focused field after a manual hide)
+        function onKwinShowRequested() {
+            if (mainWindow.computeMode() === "auto" && virtualKeyEngine.imActive && mainWindow.autoHidden) {
+                autoHideTimer.stop()
+                mainWindow.autoHidden = false
+            }
+        }
         function onKeyboardVisibleChanged() {
             if (controller.keyboardVisible) {
                 mainWindow.isMinimized = false

@@ -52,6 +52,9 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
   Material 3 switches, segmented buttons, filter chips and slider. The settings view grows the keyboard upwards.
 - Key popout now also works in the Extended layout; its spacebar is a plain key.
 - Fixed: changing the keyboard height grew the card downwards off-screen; the bottom edge now stays put.
+- Tapping an already focused text field brings the keyboard back after hiding it (⌄): the dismissal is
+  reported to KWin (`org.kde.kwin.VirtualKeyboard.active = false`), so KWin re-activates the input method on
+  the next tap. Needed on the login/lock screen, where the password field cannot be left.
 
 ## [v0.91] - 2026-08-07
 
