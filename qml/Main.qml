@@ -75,9 +75,11 @@ Window {
     function computeShouldShow() {
         return computeMode() === "manual" || !autoHidden
     }
+    // Input panel only while locked: it is the only keyboard surface KWin shows over the
+    // lock screen, but KWin also shrinks the focused app window to make room for it.
+    // Everywhere else the layer-shell overlay floats over apps without resizing them.
     function computeDesiredRole() {
-        var mode = computeMode()
-        return (controller.screenLocked || (mode === "auto" && prefs.docked)) ? "panel" : "layer"
+        return controller.screenLocked ? "panel" : "layer"
     }
     // Coalesce role + visibility updates; runs after all bindings have settled
     function scheduleUpdate() { Qt.callLater(mainWindow.updateState) }
@@ -91,9 +93,7 @@ Window {
         applyVisibility()
     }
 
-    // Input panel (KWin-managed, also shown on the lock screen) when docked in automatic
-    // mode, and always while locked; layer-shell overlay for floating / manual use.
-    readonly property string desiredRole: (controller.screenLocked || (effectiveShowMode === "auto" && prefs.docked)) ? "panel" : "layer"
+    readonly property string desiredRole: controller.screenLocked ? "panel" : "layer"
     onDesiredRoleChanged: scheduleUpdate()
 
     // 0 = slid out of view, 1 = fully shown
@@ -146,6 +146,10 @@ Window {
             showSettings = false
             animateReveal(0)
         }
+    }
+
+    function toggleDocked() {
+        prefs.docked = !prefs.docked
     }
 
     function hideKeyboard() {
@@ -318,7 +322,9 @@ Window {
         visible: !mainWindow.isMinimized
         width: controller.sizeMode === "full" ? Screen.width :
                (controller.sizeMode === "onehand" ? 480 : 896)
-        height: 356
+        // Extended = 6-row PC layout. The terminal / Ctrl-Alt strip only takes space when shown.
+        readonly property bool showStrip: controller.isTerminalMode || mainWindow.ctrlActive || mainWindow.altActive
+        height: (controller.sizeMode === "full" ? 410 : 312) + (showStrip ? 44 : 0)
 
         // Position is managed imperatively (dragging breaks bindings anyway):
         //  - docked:   bottom centre, flush with the screen edge, not draggable
@@ -401,8 +407,9 @@ Window {
                 mainWindow: mainWindow
             }
 
-            // Suggestion Bar
+            // Shortcut strip: terminal quick pills or Ctrl/Alt shortcuts (hidden otherwise)
             Rectangle {
+                visible: cardBox.showStrip
                 Layout.fillWidth: true
                 height: 36
                 radius: 18
@@ -531,43 +538,6 @@ Window {
                             }
                         }
 
-                        // Separator (Only if terminal mode is active and not in Ctrl/Alt mode)
-                        Rectangle {
-                            width: 1
-                            height: 20
-                            color: "#555"
-                            visible: !mainWindow.ctrlActive && !mainWindow.altActive && controller.isTerminalMode
-                        }
-
-                        // Dynamic Italian Dictionary Word Suggestion Pills (Visible when not in Ctrl/Alt mode)
-                        Repeater {
-                            model: (!mainWindow.ctrlActive && !mainWindow.altActive) ? gestureEngine.currentSuggestions : []
-                            delegate: Rectangle {
-                                width: Math.max(60, suggText.width + 20)
-                                height: 26
-                                radius: 13
-                                color: index === 0 ? (mainWindow.activeTheme ? mainWindow.activeTheme.accentColor : "#00a2ed") : "#2d333e"
-
-                                Text {
-                                    id: suggText
-                                    anchors.centerIn: parent
-                                    text: modelData
-                                    color: "#ffffff"
-                                    font.family: mainWindow.activeTheme ? mainWindow.activeTheme.fontFamily : "sans-serif"
-                                    font.pixelSize: 12
-                                    font.bold: index === 0
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        virtualKeyEngine.sendText(modelData + " ")
-                                        mainWindow.currentInputBuffer = ""
-                                        gestureEngine.updateCurrentPrefix("")
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -582,7 +552,8 @@ Window {
                     id: layoutStack
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    currentIndex: controller.layoutMode === "abc" ? 0 :
+                    currentIndex: (controller.sizeMode === "full" && controller.layoutMode === "abc") ? 6 :
+                                  controller.layoutMode === "abc" ? 0 :
                                   (controller.layoutMode === "accenti" ? 1 :
                                   (controller.layoutMode === "symbols" ? 2 :
                                   (controller.layoutMode === "numpad" ? 3 :
@@ -1221,16 +1192,13 @@ Window {
                             }
                         }
                     }
-                }
 
-                // DPadPanel on the right side - EXCLUSIVE REQUIREMENT: sizeMode === 'full' ONLY
-                DPadPanel {
-                    visible: controller.sizeMode === "full"
-                    currentTheme: mainWindow.activeTheme
-                    vk: virtualKeyEngine
-                    controller: controller
-                    mainWindow: mainWindow
-                    Layout.alignment: Qt.AlignRight
+                    // View 6: Extended PC layout (sizeMode "full")
+                    ExtendedLayout {
+                        currentTheme: mainWindow.activeTheme
+                        vk: virtualKeyEngine
+                        controller: controller
+                    }
                 }
             }
         }
@@ -1302,32 +1270,6 @@ Window {
                             text: "Keys: Classic"
                             selected: prefs.keyStyle === "classic"
                             onTapped: prefs.keyStyle = "classic"
-                        }
-                    }
-
-                    Text {
-                        text: "Position"
-                        color: settingsPanel.labelColor
-                        font.pixelSize: 13
-                        font.bold: true
-                        topPadding: 6
-                    }
-
-                    Row {
-                        spacing: 6
-                        OptionPill {
-                            accent: settingsPanel.accent
-                            labelColor: settingsPanel.labelColor
-                            text: "Floating"
-                            selected: !prefs.docked
-                            onTapped: prefs.docked = false
-                        }
-                        OptionPill {
-                            accent: settingsPanel.accent
-                            labelColor: settingsPanel.labelColor
-                            text: "Docked (bottom centre)"
-                            selected: prefs.docked
-                            onTapped: prefs.docked = true
                         }
                     }
 

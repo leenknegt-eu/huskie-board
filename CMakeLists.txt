@@ -99,9 +99,10 @@ qt_add_qml_module(tastiera
         qml/Main.qml
         qml/KeyButton.qml
         qml/SwipeCanvas.qml
-        qml/DPadPanel.qml
         qml/TouchBarView.qml
         qml/OptionPill.qml
+        qml/IconButton.qml
+        qml/ExtendedLayout.qml
         qml/themes/KdeAuto.qml
         qml/themes/BreezeLight.qml
         qml/themes/BreezeDark.qml

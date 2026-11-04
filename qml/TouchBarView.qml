@@ -96,28 +96,6 @@ Rectangle {
                         }
                     }
 
-                    // Split Pill
-                    Rectangle {
-                        visible: controller ? controller.sizeMode !== "onehand" : true
-                        width: 62
-                        height: 26
-                        radius: 13
-                        color: controller && controller.isSplit ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "▯▯ Split"
-                            color: controller && controller.isSplit ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: if (controller) controller.isSplit = !controller.isSplit
-                        }
-                    }
-
                     // Klipper Pill
                     Rectangle {
                         width: 64
@@ -242,26 +220,35 @@ Rectangle {
             }
         }
 
-        // Settings button (theme, position)
-        Rectangle {
-            width: 34
-            height: 34
-            radius: 17
+        // Dock / float toggle: icon shows the current state
+        IconButton {
             Layout.alignment: Qt.AlignVCenter
-            color: mainWindow && mainWindow.showSettings ? (currentTheme ? currentTheme.accentColor : "#00a2ed")
-                                                         : (currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d")
+            icon: (cardBox && cardBox.docked) ? "docked" : "floating"
+            iconColor: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
+            activeColor: currentTheme ? currentTheme.accentColor : "#00a2ed"
+            idleColor: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
+            onClicked: if (mainWindow) mainWindow.toggleDocked()
+        }
 
-            Text {
-                anchors.centerIn: parent
-                text: "⚙"
-                color: mainWindow && mainWindow.showSettings ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
-                font.pixelSize: 18
-            }
+        // Settings (theme, typing, show mode)
+        IconButton {
+            Layout.alignment: Qt.AlignVCenter
+            icon: "gear"
+            active: !!(mainWindow && mainWindow.showSettings)
+            iconColor: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
+            activeColor: currentTheme ? currentTheme.accentColor : "#00a2ed"
+            idleColor: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
+            onClicked: if (mainWindow) mainWindow.showSettings = !mainWindow.showSettings
+        }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: if (mainWindow) mainWindow.showSettings = !mainWindow.showSettings
-            }
+        // Hide keyboard
+        IconButton {
+            Layout.alignment: Qt.AlignVCenter
+            icon: "hide"
+            iconColor: currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd"
+            activeColor: currentTheme ? currentTheme.accentColor : "#00a2ed"
+            idleColor: currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d"
+            onClicked: if (mainWindow) mainWindow.hideKeyboard()
         }
     }
 }

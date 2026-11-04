@@ -31,6 +31,14 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
   with colour press feedback, slide-in/out and popup animations. "Classic" keys keep the old outlined look.
 - Docked is now the default position for new installs.
 - Fixed auto show/hide occasionally reading stale state (keyboard staying hidden after activation).
+- The input panel is now only used while the screen is locked: KWin shrinks the focused app window around a
+  docked input panel, so outside the lock screen the keyboard is an overlay again (apps keep their size).
+- Extended size is now a full PC layout: Esc/F1–F12/Home/End, number row, punctuation, Tab/Caps/Enter,
+  both Shifts, Ctrl/Super/Alt and an inverted-T arrow cluster with Del. Modifiers latch for the next key.
+- Dock/float toggle and a hide button in the top bar (position removed from Settings); gear icon is now
+  drawn so it is exactly centred.
+- Removed the word-suggestion row and the Split pill; the terminal / Ctrl-Alt strip only appears when used
+  (terminal pills now off by default).
 
 ## [v0.91] - 2026-08-07
 

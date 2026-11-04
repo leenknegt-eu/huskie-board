@@ -192,7 +192,8 @@ namespace {
 constexpr uint32_t IM_MOD_SHIFT = 1u << 0;
 constexpr uint32_t IM_MOD_CTRL  = 1u << 1;
 constexpr uint32_t IM_MOD_ALT   = 1u << 2;
-const char IM_MODIFIERS_MAP[] = "Shift\0Control\0Mod1\0";
+constexpr uint32_t IM_MOD_SUPER = 1u << 3;
+const char IM_MODIFIERS_MAP[] = "Shift\0Control\0Mod1\0Mod4\0";
 
 // Translate the evdev keycodes used by the QML into X keysyms
 uint32_t evdevToKeysym(uint32_t key)
@@ -225,6 +226,18 @@ uint32_t evdevToKeysym(uint32_t key)
     case KEY_SPACE:     return 0x20;
     case KEY_F11:       return 0xffc8;
     case KEY_F12:       return 0xffc9;
+    case KEY_MINUS:      return '-';
+    case KEY_EQUAL:      return '=';
+    case KEY_LEFTBRACE:  return '[';
+    case KEY_RIGHTBRACE: return ']';
+    case KEY_SEMICOLON:  return ';';
+    case KEY_APOSTROPHE: return '\'';
+    case KEY_GRAVE:      return '`';
+    case KEY_BACKSLASH:  return '\\';
+    case KEY_COMMA:      return ',';
+    case KEY_DOT:        return '.';
+    case KEY_SLASH:      return '/';
+    case KEY_INSERT:     return 0xff63;
     default:            return 0;
     }
 }
@@ -303,6 +316,7 @@ bool WaylandVirtualKeyboard::imSendKey(uint32_t evdevKeycode, uint32_t modifier)
     if (modifier & 1) mods |= IM_MOD_SHIFT;
     if (modifier & 4) mods |= IM_MOD_CTRL;
     if (modifier & 8) mods |= IM_MOD_ALT;
+    if (modifier & 64) mods |= IM_MOD_SUPER;
 
     const uint32_t time = QDateTime::currentMSecsSinceEpoch() & 0xFFFFFFFF;
     zwp_input_method_context_v1_keysym(m_imContext, m_imSerial, time, sym, WL_KEYBOARD_KEY_STATE_PRESSED, mods);
@@ -508,16 +522,16 @@ void WaylandVirtualKeyboard::sendCombo(uint32_t modifier, uint32_t keycode)
     if (imSendKey(keycode, modifier))
         return;
 
-    uint32_t modKey = 0;
-    if (modifier == 4) modKey = KEY_LEFTCTRL;
-    else if (modifier == 1) modKey = KEY_LEFTSHIFT;
-    else if (modifier == 8) modKey = KEY_LEFTALT;
-
-    if (modKey != 0) sendUinputKey(modKey, true);
+    // modifier is a bit mask: 1 Shift, 4 Ctrl, 8 Alt, 64 Super
+    static const struct { uint32_t bit; uint32_t key; } modKeys[] = {
+        {4, KEY_LEFTCTRL}, {8, KEY_LEFTALT}, {64, KEY_LEFTMETA}, {1, KEY_LEFTSHIFT} };
+    for (const auto &m : modKeys)
+        if (modifier & m.bit) sendUinputKey(m.key, true);
     sendUinputKey(keycode, true);
     usleep(12000);
     sendUinputKey(keycode, false);
-    if (modKey != 0) sendUinputKey(modKey, false);
+    for (const auto &m : modKeys)
+        if (modifier & m.bit) sendUinputKey(m.key, false);
 }
 
 void WaylandVirtualKeyboard::sendBackspace()

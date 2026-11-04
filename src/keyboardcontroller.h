@@ -94,7 +94,7 @@ private:
     QString m_layoutMode{"abc"};  // "abc", "accenti", "symbols", "numpad", "emoji", "klipper"
     QString m_activeTheme{"Auto"}; // "Auto" (KDE color scheme) or a file name in qml/themes/
     bool m_isSplit = false;
-    bool m_isTerminalMode = true;
+    bool m_isTerminalMode = false;
     bool m_isPasswordMode = false;
     bool m_isHardwareKeyboardConnected = false;
     bool m_backspaceDeletingWord = false;
