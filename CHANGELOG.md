@@ -7,6 +7,12 @@ All notable changes to **Plasma Keyboard** will be documented in this file.
 - Renamed binary/desktop entry to `tastiera` to avoid clashing with KDE's `plasma-keyboard` (Plasma 6.8+).
 - `make install` now installs the binary and `tastiera.desktop`.
 - Added Arch Linux PKGBUILD in `packaging/arch/`.
+- Settings menu (⚙ in the top bar) replaces the always-visible theme strip; choices persist in `~/.config/KDE/tastiera.conf`.
+- New default theme "Auto (KDE)" follows the active KDE color scheme; added Breeze Light.
+- Removed redundant `?123` pill from the top bar (the key in the bottom row remains).
+- Keyboard and minimized bubble can no longer be dragged off-screen; positions are re-clamped on rotation.
+- New "Docked" position: pinned to the bottom centre at its current width, not draggable.
+- Fixed unreadable special-key and accent-popup labels on light themes.
 
 ## [v0.91] - 2026-08-07
 

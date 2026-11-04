@@ -27,7 +27,7 @@ Rectangle {
 
             Text {
                 id: titleText
-                text: ":::  KDE Touch Key"
+                text: cardBox && cardBox.docked ? "Tastiera" : ":::  Tastiera"
                 color: currentTheme ? currentTheme.textColor : "#1e1e1e"
                 font.family: currentTheme ? currentTheme.fontFamily : "sans-serif"
                 font.pixelSize: 14
@@ -38,7 +38,7 @@ Rectangle {
             MouseArea {
                 id: dragMouseArea
                 anchors.fill: parent
-                cursorShape: Qt.SizeAllCursor
+                cursorShape: cardBox && cardBox.docked ? Qt.ArrowCursor : Qt.SizeAllCursor
                 property point startPos: "0,0"
 
                 onPressed: (mouse) => {
@@ -47,10 +47,8 @@ Rectangle {
 
                 onPositionChanged: (mouse) => {
                     if (pressed && cardBox) {
-                        var deltaX = mouse.x - startPos.x
-                        var deltaY = mouse.y - startPos.y
-                        cardBox.x += deltaX
-                        cardBox.y += deltaY
+                        // moveBy() keeps the card on-screen and ignores drags when docked
+                        cardBox.moveBy(mouse.x - startPos.x, mouse.y - startPos.y)
                     }
                 }
             }
@@ -86,7 +84,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: "ABC"
-                            color: controller && controller.layoutMode === "abc" ? "#ffffff" : "#d0d5dd"
+                            color: controller && controller.layoutMode === "abc" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                             font.pixelSize: 12
                             font.bold: true
                         }
@@ -94,27 +92,6 @@ Rectangle {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: if (controller) controller.layoutMode = "abc"
-                        }
-                    }
-
-                    // ?123 Pill
-                    Rectangle {
-                        width: 50
-                        height: 26
-                        radius: 13
-                        color: controller && controller.layoutMode === "symbols" ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "?123"
-                            color: controller && controller.layoutMode === "symbols" ? "#ffffff" : "#d0d5dd"
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: if (controller) controller.layoutMode = "symbols"
                         }
                     }
 
@@ -129,7 +106,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: "▯▯ Split"
-                            color: controller && controller.isSplit ? "#ffffff" : "#d0d5dd"
+                            color: controller && controller.isSplit ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                             font.pixelSize: 11
                             font.bold: true
                         }
@@ -150,7 +127,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: "📋 Klipper"
-                            color: controller && controller.layoutMode === "klipper" ? "#ffffff" : "#d0d5dd"
+                            color: controller && controller.layoutMode === "klipper" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                             font.pixelSize: 11
                             font.bold: true
                         }
@@ -171,7 +148,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: ">_ Term"
-                            color: controller && controller.isTerminalMode ? "#ffffff" : "#d0d5dd"
+                            color: controller && controller.isTerminalMode ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                             font.pixelSize: 11
                             font.bold: true
                         }
@@ -182,30 +159,6 @@ Rectangle {
                         }
                     }
 
-                    // Theme Pill Switcher
-                    Rectangle {
-                        width: 68
-                        height: 26
-                        radius: 13
-                        color: mainWindow && mainWindow.showThemeSelector ? (currentTheme ? currentTheme.accentColor : "#00a2ed") : "transparent"
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "🎨 Theme"
-                            color: mainWindow && mainWindow.showThemeSelector ? "#ffffff" : "#d0d5dd"
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                if (mainWindow) {
-                                    mainWindow.showThemeSelector = !mainWindow.showThemeSelector
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -233,7 +186,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: "Normal"
-                        color: controller && controller.sizeMode === "normal" ? "#ffffff" : "#d0d5dd"
+                        color: controller && controller.sizeMode === "normal" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                         font.pixelSize: 11
                         font.bold: controller && controller.sizeMode === "normal"
                     }
@@ -254,7 +207,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: "Extended"
-                        color: controller && controller.sizeMode === "full" ? "#ffffff" : "#d0d5dd"
+                        color: controller && controller.sizeMode === "full" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                         font.pixelSize: 11
                         font.bold: controller && controller.sizeMode === "full"
                     }
@@ -275,7 +228,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: "📱 1-Handed"
-                        color: controller && controller.sizeMode === "onehand" ? "#ffffff" : "#d0d5dd"
+                        color: controller && controller.sizeMode === "onehand" ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
                         font.pixelSize: 10
                         font.bold: controller && controller.sizeMode === "onehand"
                     }
@@ -285,6 +238,28 @@ Rectangle {
                         onClicked: if (controller) controller.sizeMode = "onehand"
                     }
                 }
+            }
+        }
+
+        // Settings button (theme, position)
+        Rectangle {
+            width: 34
+            height: 34
+            radius: 17
+            Layout.alignment: Qt.AlignVCenter
+            color: mainWindow && mainWindow.showSettings ? (currentTheme ? currentTheme.accentColor : "#00a2ed")
+                                                         : (currentTheme && currentTheme.sizeModePillBg ? currentTheme.sizeModePillBg : "#21252d")
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚙"
+                color: mainWindow && mainWindow.showSettings ? "#ffffff" : (currentTheme && currentTheme.pillTextColor ? currentTheme.pillTextColor : "#d0d5dd")
+                font.pixelSize: 18
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: if (mainWindow) mainWindow.showSettings = !mainWindow.showSettings
             }
         }
     }

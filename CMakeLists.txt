@@ -90,6 +90,9 @@ qt_add_qml_module(tastiera
         qml/SwipeCanvas.qml
         qml/DPadPanel.qml
         qml/TouchBarView.qml
+        qml/OptionPill.qml
+        qml/themes/KdeAuto.qml
+        qml/themes/BreezeLight.qml
         qml/themes/BreezeDark.qml
         qml/themes/TeenageOP1.qml
         qml/themes/NothingDark.qml

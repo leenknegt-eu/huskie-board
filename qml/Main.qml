@@ -2,12 +2,13 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
+import QtCore
 import Tastiera 1.0
 
 Window {
     id: mainWindow
     visible: false
-    title: "Plasma Keyboard"
+    title: "Tastiera"
     color: "transparent"
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus
 
@@ -15,8 +16,41 @@ Window {
     height: Screen.height
 
     property string currentInputBuffer: ""
-    property bool showThemeSelector: false
+    property bool showSettings: false
     property bool isMinimized: false
+
+    // Persistent user preferences (~/.config/KDE/tastiera.conf)
+    Settings {
+        id: prefs
+        category: "General"
+        property string theme: "Auto"   // "Auto" follows the KDE color scheme
+        property bool docked: false     // true = pinned to bottom centre, not draggable
+    }
+
+    readonly property var themeChoices: [
+        { id: "Auto",          label: "Auto (KDE)" },
+        { id: "BreezeLight",   label: "Breeze Light" },
+        { id: "BreezeDark",    label: "Breeze Dark" },
+        { id: "TeenageOP1",    label: "OP-1" },
+        { id: "NothingDark",   label: "Nothing Dark" },
+        { id: "NothingLight",  label: "Nothing Light" },
+        { id: "HackerMatrix",  label: "Matrix" },
+        { id: "Cyberpunk2077", label: "Cyberpunk" },
+        { id: "DraculaDark",   label: "Dracula" },
+        { id: "NordFrost",     label: "Nord" }
+    ]
+
+    function themeFile(name) {
+        var known = themeChoices.some(function (t) { return t.id === name })
+        return "themes/" + ((!known || name === "Auto") ? "KdeAuto" : name) + ".qml"
+    }
+
+    function selectTheme(name) {
+        prefs.theme = name
+        controller.activeTheme = name
+    }
+
+    Component.onCompleted: controller.activeTheme = prefs.theme
     property int shiftState: 0 // 0 = lowercase, 1 = shift single, 2 = caps lock
     property bool ctrlActive: false
     property bool altActive: false
@@ -41,15 +75,16 @@ Window {
     property var activeTheme
     Loader {
         id: themeLoader
-        source: "themes/" + controller.activeTheme + ".qml"
+        source: mainWindow.themeFile(controller.activeTheme)
         onLoaded: mainWindow.activeTheme = themeLoader.item
     }
 
+    // Keep everything on-screen when the screen size changes (e.g. tablet rotation)
+    onWidthChanged: { cardBox.reposition(); minimizedPill.clamp() }
+    onHeightChanged: { cardBox.reposition(); minimizedPill.clamp() }
+
     Connections {
         target: controller
-        function onActiveThemeChanged() {
-            themeLoader.source = "themes/" + controller.activeTheme + ".qml"
-        }
         function onKeyboardVisibleChanged() {
             if (controller.keyboardVisible) {
                 mainWindow.isMinimized = false
@@ -94,6 +129,11 @@ Window {
             }
         }
 
+        function clamp() {
+            x = Math.max(0, Math.min(x, mainWindow.width - width))
+            y = Math.max(0, Math.min(y, mainWindow.height - height))
+        }
+
         onXChanged: minimizedPill.syncMinimizedMask()
         onYChanged: minimizedPill.syncMinimizedMask()
         onVisibleChanged: if (mainWindow.isMinimized) minimizedPill.syncMinimizedMask()
@@ -124,6 +164,7 @@ Window {
                     var deltaY = mouse.y - startPos.y
                     minimizedPill.x += deltaX
                     minimizedPill.y += deltaY
+                    minimizedPill.clamp()
                 }
             }
 
@@ -142,9 +183,38 @@ Window {
                (controller.sizeMode === "onehand" ? 480 : 896)
         height: 356
 
-        x: controller.sizeMode === "full" ? 0 :
-           (controller.sizeMode === "onehand" ? (parent.width - width - 16) : (parent.width - width) / 2)
-        y: parent.height - height - 40
+        // Position is managed imperatively (dragging breaks bindings anyway):
+        //  - docked:   bottom centre, flush with the screen edge, not draggable
+        //  - floating: draggable, but always kept fully on-screen
+        readonly property bool docked: prefs.docked
+        readonly property int floatMargin: 40
+
+        function placeDefault() {
+            if (docked || controller.sizeMode !== "onehand")
+                x = Math.round((mainWindow.width - width) / 2)
+            else
+                x = mainWindow.width - width - 16
+            y = docked ? mainWindow.height - height : mainWindow.height - height - floatMargin
+            clamp()
+        }
+
+        function clamp() {
+            x = Math.max(0, Math.min(x, mainWindow.width - width))
+            y = Math.max(0, Math.min(y, mainWindow.height - height))
+        }
+
+        function moveBy(dx, dy) {
+            if (docked) return
+            x += dx
+            y += dy
+            clamp()
+        }
+
+        function reposition() {
+            if (docked) placeDefault(); else clamp()
+        }
+
+        onDockedChanged: placeDefault()
 
         function syncMask() {
             if (!mainWindow.isMinimized) {
@@ -154,13 +224,13 @@ Window {
 
         onXChanged: cardBox.syncMask()
         onYChanged: cardBox.syncMask()
-        onWidthChanged: cardBox.syncMask()
+        onWidthChanged: { cardBox.placeDefault(); cardBox.syncMask() }   // size mode switched
         onHeightChanged: cardBox.syncMask()
         onVisibleChanged: if (!mainWindow.isMinimized) cardBox.syncMask()
-        Component.onCompleted: cardBox.syncMask()
+        Component.onCompleted: { cardBox.placeDefault(); cardBox.syncMask() }
 
         color: mainWindow.activeTheme ? mainWindow.activeTheme.backgroundColor : "#e3dfd8"
-        radius: controller.sizeMode === "full" ? 0 : (mainWindow.activeTheme ? mainWindow.activeTheme.cardRadius : 24)
+        radius: controller.sizeMode === "full" ? 0 : (mainWindow.activeTheme && mainWindow.activeTheme.cardRadius !== undefined ? mainWindow.activeTheme.cardRadius : 24)
         border.color: mainWindow.activeTheme ? mainWindow.activeTheme.cardBorderColor : "#c8c3b9"
         border.width: controller.sizeMode === "full" ? 0 : 1
 
@@ -188,246 +258,20 @@ Window {
                 mainWindow: mainWindow
             }
 
-            // Suggestion Bar OR Theme Selector Bar
+            // Suggestion Bar
             Rectangle {
                 Layout.fillWidth: true
                 height: 36
                 radius: 18
                 color: mainWindow.activeTheme && mainWindow.activeTheme.headerPillBg ? mainWindow.activeTheme.headerPillBg : "#434a56"
 
-                // State 1: Theme Selector Pills Mode (8 Pluggable Themes)
-                Flickable {
-                    anchors.fill: parent
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 6
-                    contentWidth: themeRow.width
-                    clip: true
-                    visible: mainWindow.showThemeSelector
-
-                    RowLayout {
-                        id: themeRow
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
-
-                        // 1. Teenage OP-1
-                        Rectangle {
-                            width: 100
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "TeenageOP1" ? "#ff4800" : "#e3dfd8"
-                            border.color: "#ff4800"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "🎨 OP-1"
-                                color: controller.activeTheme === "TeenageOP1" ? "#ffffff" : "#1e1e1e"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "TeenageOP1"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 2. Breeze Dark
-                        Rectangle {
-                            width: 100
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "BreezeDark" ? "#3daee9" : "#232629"
-                            border.color: "#3daee9"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "🌙 Breeze"
-                                color: "#ffffff"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "BreezeDark"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 3. Nothing Dark
-                        Rectangle {
-                            width: 110
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "NothingDark" ? "#ff2e2e" : "#0a0a0a"
-                            border.color: "#ff2e2e"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "⚫ Nothing Dark"
-                                color: "#ffffff"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "NothingDark"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 4. Nothing Light
-                        Rectangle {
-                            width: 110
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "NothingLight" ? "#0a0a0a" : "#ffffff"
-                            border.color: "#0a0a0a"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "⚪ Nothing Light"
-                                color: controller.activeTheme === "NothingLight" ? "#ffffff" : "#0a0a0a"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "NothingLight"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 5. Hacker / Matrix
-                        Rectangle {
-                            width: 100
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "HackerMatrix" ? "#00ff41" : "#050a05"
-                            border.color: "#00ff41"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "💻 Matrix"
-                                color: controller.activeTheme === "HackerMatrix" ? "#050a05" : "#00ff41"
-                                font.family: "monospace"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "HackerMatrix"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 6. Cyberpunk 2077
-                        Rectangle {
-                            width: 110
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "Cyberpunk2077" ? "#ff0055" : "#0d0221"
-                            border.color: "#00f0ff"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "🌆 Cyberpunk"
-                                color: "#00f0ff"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "Cyberpunk2077"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 7. Dracula Dark
-                        Rectangle {
-                            width: 100
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "DraculaDark" ? "#ff79c6" : "#282a36"
-                            border.color: "#bd93f9"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "🧛 Dracula"
-                                color: controller.activeTheme === "DraculaDark" ? "#ffffff" : "#f8f8f2"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "DraculaDark"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-
-                        // 8. Nord Frost
-                        Rectangle {
-                            width: 100
-                            height: 28
-                            radius: 14
-                            color: controller.activeTheme === "NordFrost" ? "#88c0d0" : "#2e3440"
-                            border.color: "#88c0d0"
-                            border.width: 1
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "❄️ Nord"
-                                color: controller.activeTheme === "NordFrost" ? "#2e3440" : "#eceff4"
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    controller.activeTheme = "NordFrost"
-                                    mainWindow.showThemeSelector = false
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // State 2: Dynamic Suggestions, Terminal Bar, or Ctrl/Alt Shortcuts
+                // Dynamic Suggestions, Terminal Bar, or Ctrl/Alt Shortcuts
                 Flickable {
                     anchors.fill: parent
                     anchors.leftMargin: 8
                     anchors.rightMargin: 8
                     contentWidth: suggRow.width
                     clip: true
-                    visible: !mainWindow.showThemeSelector
 
                     RowLayout {
                         id: suggRow
@@ -1250,6 +1094,87 @@ Window {
                     controller: controller
                     mainWindow: mainWindow
                     Layout.alignment: Qt.AlignRight
+                }
+            }
+        }
+
+        // Settings panel: overlays the suggestion bar and keys, below the top bar
+        Rectangle {
+            id: settingsPanel
+            visible: mainWindow.showSettings
+            z: 100
+            anchors.fill: parent
+            anchors.topMargin: 10 + 44 + 4
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.bottomMargin: 10
+            radius: 16
+            color: mainWindow.activeTheme && mainWindow.activeTheme.headerPillBg ? mainWindow.activeTheme.headerPillBg : "#434a56"
+
+            readonly property color labelColor: mainWindow.activeTheme && mainWindow.activeTheme.pillTextColor ? mainWindow.activeTheme.pillTextColor : "#d0d5dd"
+            readonly property color accent: mainWindow.activeTheme ? mainWindow.activeTheme.accentColor : "#00a2ed"
+
+            // Swallow touches so keys underneath don't fire
+            MouseArea { anchors.fill: parent }
+
+            Flickable {
+                anchors.fill: parent
+                anchors.margins: 14
+                contentHeight: settingsColumn.implicitHeight
+                clip: true
+
+                Column {
+                    id: settingsColumn
+                    width: parent.width
+                    spacing: 10
+
+                    Text {
+                        text: "Theme"
+                        color: settingsPanel.labelColor
+                        font.pixelSize: 13
+                        font.bold: true
+                    }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 6
+                        Repeater {
+                            model: mainWindow.themeChoices
+                            delegate: OptionPill {
+                                accent: settingsPanel.accent
+                                labelColor: settingsPanel.labelColor
+                                text: modelData.label
+                                selected: controller.activeTheme === modelData.id
+                                onTapped: mainWindow.selectTheme(modelData.id)
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: "Position"
+                        color: settingsPanel.labelColor
+                        font.pixelSize: 13
+                        font.bold: true
+                        topPadding: 6
+                    }
+
+                    Row {
+                        spacing: 6
+                        OptionPill {
+                            accent: settingsPanel.accent
+                            labelColor: settingsPanel.labelColor
+                            text: "Floating"
+                            selected: !prefs.docked
+                            onTapped: prefs.docked = false
+                        }
+                        OptionPill {
+                            accent: settingsPanel.accent
+                            labelColor: settingsPanel.labelColor
+                            text: "Docked (bottom centre)"
+                            selected: prefs.docked
+                            onTapped: prefs.docked = true
+                        }
+                    }
                 }
             }
         }

@@ -104,7 +104,7 @@ Rectangle {
                     Text {
                         anchors.centerIn: parent
                         text: modelData
-                        color: "#ffffff"
+                        color: index === root.selectedAccentIndex ? "#ffffff" : (currentTheme ? currentTheme.textColor : "#ffffff")
                         font.pixelSize: 16
                         font.bold: true
                     }
