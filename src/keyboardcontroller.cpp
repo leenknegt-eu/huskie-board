@@ -9,6 +9,11 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 #include <QDBusVariant>
+#include <QTextLayout>
+#include <QGlyphRun>
+#include <QFont>
+#include <QImage>
+#include <QPainter>
 #include <QtWaylandClient/private/qwaylandwindow_p.h>
 
 #include "inputpanelshell.h"
@@ -96,6 +101,52 @@ void KeyboardController::onKWinVirtualKeyboardChanged()
         if (visible && active)
             emit kwinShowRequested();
     });
+}
+
+bool KeyboardController::emojiRenderable(const QString &emoji) const
+{
+    QFont font;
+    font.setFamily(QStringLiteral("emoji"));   // same family the emoji panel draws with (fontconfig alias)
+    QTextLayout layout(emoji, font);
+    layout.beginLayout();
+    layout.createLine();
+    layout.endLayout();
+    int glyphs = 0;
+    for (const QGlyphRun &run : layout.glyphRuns()) {
+        for (quint32 index : run.glyphIndexes()) {
+            if (index == 0)            // .notdef: missing glyph
+                return false;
+            ++glyphs;
+        }
+    }
+    if (glyphs != 1)                  // sequences the font doesn't know split into several glyphs
+        return false;
+
+    // Having a glyph index is not enough: some font builds carry the newest emoji only in a
+    // colour format Qt can't rasterise, which then shows as an empty box. Draw it and
+    // require coloured pixels (a missing-glyph box is monochrome).
+    QImage img(48, 48, QImage::Format_ARGB32_Premultiplied);
+    img.fill(Qt::transparent);
+    {
+        QPainter p(&img);
+        QFont big = font;
+        big.setPixelSize(36);
+        p.setFont(big);
+        p.setPen(Qt::black);
+        p.drawText(img.rect(), Qt::AlignCenter, emoji);
+    }
+    int coloured = 0;
+    for (int y = 0; y < img.height(); ++y) {
+        const QRgb *line = reinterpret_cast<const QRgb *>(img.constScanLine(y));
+        for (int x = 0; x < img.width(); ++x) {
+            const QRgb c = line[x];
+            if (qAlpha(c) < 128) continue;
+            const int hi = qMax(qRed(c), qMax(qGreen(c), qBlue(c)));
+            const int lo = qMin(qRed(c), qMin(qGreen(c), qBlue(c)));
+            if (hi - lo > 40) ++coloured;
+        }
+    }
+    return coloured > 20;
 }
 
 void KeyboardController::dismissInKWin()

@@ -11,7 +11,9 @@ All notable changes to **Huskie-board** (formerly tastiera / Plasma Keyboard) ar
 - Added the GPL-3.0 license text (`LICENSE`), matching the licence declared by the original tastiera project.
   The repository moved to https://github.com/leenknegt-eu/huskie-board (old URLs redirect).
 - Emoji panel rebuilt: the old grid collapsed to a sliver (layout height conflict) and could not be used.
-  Now a scrollable grid with 6 categories (324 emoji) and an ABC · categories · backspace bar.
+  Now the full Unicode Emoji 18.0 set (3,963 emoji, generated from Unicode's emoji-test.txt by
+  `tools/gen-emoji.py`) in 9 categories, skin tones on long press, and an ABC · categories · backspace bar.
+  Emoji the installed emoji font can't draw are hidden instead of showing as empty boxes.
 - Symbols (?123) rebuilt in the Gboard style with the same bottom row as the letters (drawn emoji icon,
   round Enter) and a second page of symbols (=\<).
 

@@ -35,7 +35,9 @@ lock screen and the login screen, and follows your KDE colour scheme.
   - **One-handed**: compact width (sits at the side when floating)
 - **Docked or floating.** Docked sits flush at the bottom centre; floating can be dragged anywhere
   (but never off-screen). Neither resizes your apps.
-- **Adjustable height** (70–150 %), clipboard history (Klipper), emoji and a terminal shortcut bar.
+- **Full emoji set**: all of Unicode Emoji 18.0 (3,963 emoji) in 9 categories, skin tones on long
+  press. Emoji your emoji font can't draw yet are hidden automatically.
+- **Adjustable height** (70–150 %), clipboard history (Klipper) and a terminal shortcut bar.
 
 ## Screenshots
 
@@ -150,6 +152,13 @@ cmake -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build
 The keyboard needs a Wayland session; for automatic mode it has to be launched by KWin as the
 input method. `deploy_to_tablet.sh` syncs, builds and restarts it on a tablet over SSH (set
 `TABLET_HOST` first). See [CHANGELOG.md](CHANGELOG.md) for the history of changes.
+
+To update the emoji data to a new Unicode release:
+
+```bash
+curl -LO https://www.unicode.org/Public/emoji/latest/emoji-test.txt
+python3 tools/gen-emoji.py emoji-test.txt > qml/Emoji.js
+```
 
 ## Credits & license
 

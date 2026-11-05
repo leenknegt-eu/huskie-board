@@ -69,6 +69,10 @@ public:
     // so tapping the still-focused text field makes KWin activate the input method again.
     Q_INVOKABLE void dismissInKWin();
 
+    // True if the installed emoji font draws this emoji as a single glyph (so newer
+    // emoji than the font supports, or unsupported ZWJ sequences, can be hidden).
+    Q_INVOKABLE bool emojiRenderable(const QString &emoji) const;
+
 signals:
     void sizeModeChanged();
     void layoutModeChanged();
