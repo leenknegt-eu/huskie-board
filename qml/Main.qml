@@ -648,128 +648,12 @@ Window {
                         }
                     }
 
-                    // View 2: ?123 Symbols (Gboard 4-Row Complete Layout)
-                    ColumnLayout {
-                        spacing: 6
-
-                        // Row 1: 1 2 3 4 5 6 7 8 9 0
-                        RowLayout {
-                            spacing: 6
-                            Repeater {
-                                model: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
-                                delegate: KeyButton {
-                                    label: modelData
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                }
-                            }
-                        }
-
-                        // Row 2: @ # $ _ & - + ( ) /
-                        RowLayout {
-                            spacing: 6
-                            Repeater {
-                                model: ["@", "#", "$", "_", "&", "-", "+", "(", ")", "/"]
-                                delegate: KeyButton {
-                                    label: modelData
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                }
-                            }
-                        }
-
-                        // Row 3: = \ % * " ' : ; ! ? ⌫
-                        RowLayout {
-                            spacing: 6
-                            Repeater {
-                                model: ["=", "\\", "%", "*", "\"", "'", ":", ";", "!", "?"]
-                                delegate: KeyButton {
-                                    label: modelData
-                                    currentTheme: mainWindow.activeTheme
-                                    vk: virtualKeyEngine
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                }
-                            }
-                            KeyButton {
-                                label: "⌫"
-                                isSpecial: true
-                                isBackspace: true
-                                implicitWidth: 60
-                                currentTheme: mainWindow.activeTheme
-                                controller: controller
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                            }
-                        }
-
-                        // Row 4: ABC 😊 , spazio . ↵ ✖
-                        RowLayout {
-                            spacing: 6
-                            KeyButton {
-                                label: "ABC"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 55
-                                currentTheme: mainWindow.activeTheme
-                                onReleased: controller.layoutMode = "abc"
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "😊"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 44
-                                currentTheme: mainWindow.activeTheme
-                                onReleased: controller.layoutMode = "emoji"
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: ","
-                                implicitWidth: 44
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "space"
-                                textToSend: " "
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "."
-                                implicitWidth: 44
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "↵"
-                                textToSend: "\n"
-                                isSpecial: true
-                                isPrimaryAction: true
-                                implicitWidth: 65
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                                Layout.fillHeight: true
-                            }
-                            KeyButton {
-                                label: "✖"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 48
-                                currentTheme: mainWindow.activeTheme
-                                Layout.fillHeight: true
-                                onReleased: mainWindow.hideKeyboard()
-                            }
-                        }
+                    // View 2: symbols (?123), two pages
+                    SymbolsLayout {
+                        host: mainWindow
+                        currentTheme: mainWindow.activeTheme
+                        vk: virtualKeyEngine
+                        controller: controller
                     }
 
                     // View 3: Numpad Calcolatrice 3x4
@@ -794,73 +678,12 @@ Window {
                         }
                     }
 
-                    // View 4: Emoji grid + ABC / space / backspace row
-                    ColumnLayout {
-                        spacing: 6
-
-                        Flickable {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            contentHeight: emojiGrid.height
-                            clip: true
-
-                            GridLayout {
-                                id: emojiGrid
-                                columns: 8
-                                rowSpacing: 6
-                                columnSpacing: 6
-                                width: parent.width
-
-                                Repeater {
-                                    model: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
-                                            "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
-                                            "😘", "😗", "😙", "😚", "😋", "😛", "😜", "🤪",
-                                            "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒",
-                                            "👍", "👎", "👏", "🙌", "👐", "🤲", "🤝", "🙏",
-                                            "🔥", "✨", "🎉", "❤️", "💯", "🚀", "💡", "⚠️"]
-                                    delegate: KeyButton {
-                                        label: modelData
-                                        isCustomAction: true      // sent below (once)
-                                        currentTheme: mainWindow.activeTheme
-                                        vk: virtualKeyEngine
-                                        Layout.fillWidth: true
-                                        implicitHeight: 48
-                                        onReleased: virtualKeyEngine.sendEmoji(modelData)
-                                    }
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 48
-                            spacing: 6
-                            KeyButton {
-                                label: "ABC"
-                                isSpecial: true
-                                isCustomAction: true
-                                implicitWidth: 72
-                                currentTheme: mainWindow.activeTheme
-                                onReleased: controller.layoutMode = "abc"
-                            }
-                            KeyButton {
-                                label: " "
-                                textToSend: " "
-                                autoAccents: false
-                                Layout.fillWidth: true
-                                currentTheme: mainWindow.activeTheme
-                                vk: virtualKeyEngine
-                            }
-                            KeyButton {
-                                icon: "backspace"
-                                isSpecial: true
-                                isBackspace: true
-                                implicitWidth: 72
-                                currentTheme: mainWindow.activeTheme
-                                controller: controller
-                                vk: virtualKeyEngine
-                            }
-                        }
+                    // View 4: emoji picker with categories
+                    EmojiLayout {
+                        host: mainWindow
+                        currentTheme: mainWindow.activeTheme
+                        vk: virtualKeyEngine
+                        controller: controller
                     }
 
                     // View 5: Klipper Clipboard View (Clean Modern Layout)

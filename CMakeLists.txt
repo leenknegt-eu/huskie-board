@@ -104,6 +104,9 @@ qt_add_qml_module(huskie-board
         qml/IconButton.qml
         qml/ExtendedLayout.qml
         qml/QwertyLayout.qml
+        qml/SymbolsLayout.qml
+        qml/EmojiLayout.qml
+        qml/Emoji.js
         qml/KeyIcon.qml
         qml/ValueSlider.qml
         qml/Elevation.qml

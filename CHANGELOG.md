@@ -10,6 +10,10 @@ All notable changes to **Huskie-board** (formerly tastiera / Plasma Keyboard) ar
 - New README and screenshots.
 - Added the GPL-3.0 license text (`LICENSE`), matching the licence declared by the original tastiera project.
   The repository moved to https://github.com/leenknegt-eu/huskie-board (old URLs redirect).
+- Emoji panel rebuilt: the old grid collapsed to a sliver (layout height conflict) and could not be used.
+  Now a scrollable grid with 6 categories (324 emoji) and an ABC · categories · backspace bar.
+- Symbols (?123) rebuilt in the Gboard style with the same bottom row as the letters (drawn emoji icon,
+  round Enter) and a second page of symbols (=\<).
 
 - Renamed binary/desktop entry to `tastiera` to avoid clashing with KDE's `plasma-keyboard` (Plasma 6.8+).
 - `make install` now installs the binary and `tastiera.desktop`.
