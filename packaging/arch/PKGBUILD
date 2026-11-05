@@ -1,9 +1,9 @@
 # Maintainer: huskie <sammileenk@gmail.com>
-pkgname=tastiera-git
-_pkgname=tastiera
+pkgname=huskie-board-git
+_pkgname=huskie-board
 pkgver=0.91
 pkgrel=1
-pkgdesc='Floating touch virtual keyboard for KDE Plasma 6 Wayland'
+pkgdesc='Gboard-style touch keyboard for KDE Plasma 6 on Wayland'
 arch=('x86_64' 'aarch64')
 url='https://github.com/leenknegt-eu/tastiera'
 license=('GPL-3.0-or-later')
@@ -12,7 +12,8 @@ depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'kcoreaddons' 'ki18n'
 makedepends=('git' 'cmake' 'extra-cmake-modules' 'wayland-protocols' 'ninja')
 optdepends=('plasma-workspace: Klipper clipboard history integration')
 provides=("$_pkgname")
-conflicts=("$_pkgname")
+conflicts=("$_pkgname" tastiera-git)
+replaces=(tastiera-git)
 source=("$_pkgname::git+$url.git")
 sha256sums=('SKIP')
 

@@ -3,6 +3,8 @@
 #include <QQmlContext>
 #include <QQuickWindow>
 #include <KLocalizedString>
+#include <QFile>
+#include <QStandardPaths>
 
 #include "keyboardcontroller.h"
 #include "waylandvirtualkeyboard.h"
@@ -34,13 +36,22 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     app.setOrganizationName("KDE");
     app.setOrganizationDomain("kde.org");
-    app.setApplicationName("tastiera");
-    app.setDesktopFileName("tastiera");
+    app.setApplicationName("huskie-board");
+    app.setDesktopFileName("huskie-board");
 
-    qmlRegisterType<KeyboardController>("Tastiera", 1, 0, "KeyboardController");
-    qmlRegisterType<WaylandVirtualKeyboard>("Tastiera", 1, 0, "WaylandVirtualKeyboard");
-    qmlRegisterType<GestureEngine>("Tastiera", 1, 0, "GestureEngine");
-    qmlRegisterType<KlipperIntegration>("Tastiera", 1, 0, "KlipperIntegration");
+    // One-time settings migration from the old "tastiera" name
+    {
+        const QString dir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/KDE/");
+        const QString oldConf = dir + QStringLiteral("tastiera.conf");
+        const QString newConf = dir + QStringLiteral("huskie-board.conf");
+        if (!QFile::exists(newConf) && QFile::exists(oldConf) && QFile::copy(oldConf, newConf))
+            qInfo() << "Migrated settings from" << oldConf;
+    }
+
+    qmlRegisterType<KeyboardController>("HuskieBoard", 1, 0, "KeyboardController");
+    qmlRegisterType<WaylandVirtualKeyboard>("HuskieBoard", 1, 0, "WaylandVirtualKeyboard");
+    qmlRegisterType<GestureEngine>("HuskieBoard", 1, 0, "GestureEngine");
+    qmlRegisterType<KlipperIntegration>("HuskieBoard", 1, 0, "KlipperIntegration");
 
     QQmlApplicationEngine engine;
 
@@ -61,7 +72,7 @@ int main(int argc, char *argv[])
         }
     }, Qt::QueuedConnection);
 
-    engine.loadFromModule("Tastiera", "Main");
+    engine.loadFromModule("HuskieBoard", "Main");
 
     return app.exec();
 }

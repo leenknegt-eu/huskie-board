@@ -1,127 +1,157 @@
-# ⌨️ Plasma Touch Key (Tastiera)
+# Huskie-board
 
+**A Gboard-style touch keyboard for KDE Plasma 6 on Wayland.**
+Built for Linux tablets and convertibles: it appears when you tap a text field, works on the
+lock screen and the login screen, and follows your KDE colour scheme.
 
----
-
-> **Next-Generation Virtual Keyboard for KDE Plasma 6 & Wayland**  
-> Designed for Linux tablets, touchscreens, and postmarketOS devices running KDE Plasma 6 Wayland.
-
-![Plasma Touch Key Keyboard Screenshot](screenshot.png)
-
----
-
-## ✨ Features
-
-- ⚡ **Native Wayland & LayerShell Protocol**: Designed from scratch for KDE Plasma 6 with `zwp_virtual_keyboard_v1`, `zwp_input_method_v2`, and `LayerShellQt`. Guarantees **zero focus stealing** when typing into terminals or native applications.
-- 🎨 **8 Pluggable Modern Themes**: Includes 8 (need to be fixed) visual themes:
-  - **Teenage OP-1** *(Industrial Synth Aesthetic)*
-  - **Breeze Dark** *(Classic KDE Native)*
-  - **Nothing OS Dark** & **Nothing OS Light** *(Minimal Dot-Matrix Aesthetic)*
-  - **Hacker / Matrix** *(Monochrome CRT Cyberpunks)*
-  - **Cyberpunk 2077** *(Neon Cyan & Magenta)*
-  - **Dracula Dark** *(Vampire Dark Palette)*
-  - **Nord Frost** *(Arctic Ice Palette)*
-- 📱 **Adaptive Layout Modes**:
-  - **Normale**: Sleek floating glassmorphism card layout.
-  - **Estesa**: Extended width panel with dedicated **D-Pad** (`▲`, `▼`, `◄`, `►`, `Home`, `End`, `Canc`, `Tutto`) and modifier keys (`Esc`, `Tab`, `Ctrl`, `Alt`).
-  - **Split Layout (`▯▯ Split`)**: Ergonomic split-bank layout for thumb typing on large tablets.
-  - **1-Mano (`📱 1-Mano`)**: Compact single-handed mode anchored to the bottom corner.
-  - **Mini-Bubble contraction**: Contracts to a non-intrusive floating handle button when closed (`✖`), with auto-reopen on text field activation.
-- 💻 **Terminal Quick Bar (`>_ Term`)**: Dedicated toggle for shell command operators (`$`, `|`, `~`, `/`, `-`, `_`, `sudo`, `grep`, `ls -la`, `cd`, `clear`).
-- ⌨️ **Dynamic Modifiers & Shortcuts Bar**: Pressing `Ctrl` or `Alt` illuminates shortcut suggestion pills (`Ctrl+C`, `Ctrl+V`, `Ctrl+X`, `Ctrl+Z`, `Ctrl+A`, `Ctrl+F`, `Alt+Tab`, `Alt+F4`...) for one-tap execution.
-- 📋 **KDE Klipper Clipboard Integration**: Direct access to KDE clipboard history with one-tap paste.
-- 😃 **UTF-8 Emoji Picker**: Integrated emoji grid supporting multi-byte Unicode insertion.
-- 🔤 **Gboard-Style Shift & Accent Gesture System**:
-  - **Shift (`⇧`)**: Single-tap for next-character uppercase (auto-reverts to lowercase).
-  - **Shift Lock (`⇪`)**: Long-press or double-tap for permanent Caps Lock.
-  - **Accents Gesture**: Hold letter (`e`, `a`, `i`, `o`, `u`) for slide & release accent selection (`è`, `é`, `à`, `ì`, `ò`, `ù`, `€`).
-  - **Accelerating Backspace (`⌫`)**: Deletion speed accelerates smoothly down to 20ms while held.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/keyboard-dark.png">
+  <img alt="Huskie-board on a tablet" src="docs/screenshots/keyboard-light.png">
+</picture>
 
 ---
 
-## ⚠️ Known Issues
+## Features
 
-- ⚠️ **Split Layout**: Split mode (`▯▯ Split`) is currently work-in-progress and requires layout boundary adjustments.
-- 🎨 **Theme Contrast**: Some visual themes are still being tuned for optimal text contrast and legibility across all display types.
-- 🔄 **KWin Input Method Sync**: Auto-activation on text field focus depends on KWin settings; if minimized, tap the floating bubble handle to restore.
+- **Shows up when you need it.** Appears when a text field is focused and hides when it loses
+  focus, like KDE's own keyboard. Hide it with <kbd>⌄</kbd>; tap the field again to bring it back.
+- **Lock screen and login screen.** Works on the Plasma lock screen and on the Plasma Login
+  Manager greeter, so you can sign in without a hardware keyboard.
+- **Types into everything that supports Wayland text input.** Text, accents and emoji go straight
+  into the focused field through KWin's input-method protocol: no clipboard tricks.
+- **Phone-style typing**
+  - Key popout above your finger
+  - Hold a letter for accents (`e` → 3 è é ê ë ē ė ę €), the top row offers its number first,
+    hold <kbd>.</kbd> for punctuation. Slide to pick, release to type.
+  - Tap <kbd>⇧</kbd> for one capital, double-tap for caps lock
+- **Material look.** Ripple feedback, tonal keys tinted with your accent colour, rounded popups
+  with soft shadows. A classic outlined style is available too.
+- **Matches your KDE theme** by default (light or dark, accent colour), with Breeze, Nord,
+  Dracula, Nothing, OP-1, Matrix and Cyberpunk themes available.
+- **Three sizes**
+  - **Normal**: phone layout
+  - **Extended**: full PC layout with Esc, F1–F12, number row, punctuation, Ctrl/Super/Alt and
+    arrow keys
+  - **One-handed**: compact width (sits at the side when floating)
+- **Docked or floating.** Docked sits flush at the bottom centre; floating can be dragged anywhere
+  (but never off-screen). Neither resizes your apps.
+- **Adjustable height** (70–150 %), clipboard history (Klipper), emoji and a terminal shortcut bar.
+
+## Screenshots
+
+| Hold for accents | Key popout (dark) |
+|---|---|
+| ![Accent popup](docs/screenshots/accents-light.png) | ![Key popout](docs/screenshots/popout-dark.png) |
+
+**Extended layout**
+
+![Extended layout](docs/screenshots/extended-dark.png)
+
+**Settings**
+
+<img alt="Settings" src="docs/screenshots/settings-light.png" width="620">
 
 ---
 
-## 🛠️ Build & Installation
+## Installation
 
-> **Fork note:** this fork renames the binary and desktop entry to `tastiera` so it no longer
-> collides with KDE's official `plasma-keyboard` package (Plasma 6.8+), and adds an Arch package.
-
-### Arch Linux
+### Arch Linux (and derivatives, incl. aarch64)
 
 ```bash
-git clone https://github.com/leenknegt-eu/tastiera.git
-cd tastiera/packaging/arch
+git clone https://github.com/leenknegt-eu/tastiera.git huskie-board
+cd huskie-board/packaging/arch
 makepkg -si
 ```
 
-Then select **Tastiera Touch Keyboard** in System Settings → Keyboard → Virtual Keyboard.
+The package replaces the old `tastiera-git` package if you had it installed.
 
-The package also makes the Plasma Login Manager greeter use Tastiera (systemd drop-in in
-`/usr/lib/systemd/user/plasma-login-kwin_wayland.service.d/tastiera.conf`). On the lock screen and in
-docked mode the keyboard is shown by KWin like KDE's own keyboard: tap a text field with your finger.
+### Other distributions
 
-### Requirements
-- **Qt 6** (Qt6Gui, Qt6Qml, Qt6Quick, Qt6DBus, Qt6WaylandClient)
-- **KDE Frameworks 6** (KCoreAddons, KI18n, LayerShellQt)
-- **Wayland Protocols** (`virtual-keyboard-unstable-v1`, `wlr-layer-shell-unstable-v1`)
-- **Linux `/dev/uinput`** access (for evdev fallback typing)
-
-### Compiling from Source
+Requirements: Qt 6 (Core, Gui, Quick, Qml, DBus, WaylandClient incl. private headers), KDE
+Frameworks 6 (CoreAddons, I18n), LayerShellQt, wayland-protocols, extra-cmake-modules.
 
 ```bash
-git clone https://github.com/andreadelsarto/tastiera.git
-cd tastiera
-
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build
+sudo cmake --install build
 ```
 
-### Running
+## Setup
+
+1. Open **System Settings → Keyboard → Virtual Keyboard** and select **Huskie-board**.
+2. Log out and back in.
+
+That's it. KWin starts Huskie-board itself; you don't need to launch it.
+
+**Login screen:** the package installs a systemd drop-in
+(`/usr/lib/systemd/user/plasma-login-kwin_wayland.service.d/huskie-board.conf`) so the Plasma
+Login Manager greeter uses Huskie-board instead of the built-in `plasma-keyboard`. Reboot once
+after installing. To skip it, build with `-DHUSKIE_LOGIN_SCREEN=OFF`.
+
+## Using it
+
+The toolbar above the keys, from left to right:
+
+| Icon | Action |
+|---|---|
+| Clipboard | Klipper clipboard history (tap again to return) |
+| Terminal | Shortcut bar with `$ \| ~ / - _ sudo grep ls -la cd clear` |
+| Keyboard size | Cycle Normal → Extended → One-handed |
+| Screen with bar | Toggle docked / floating |
+| Gear | Settings |
+| <kbd>⌄</kbd> | Hide the keyboard |
+
+In floating mode, drag the `:::` grip to move the keyboard.
+
+In the **Extended** layout, <kbd>Ctrl</kbd>, <kbd>Alt</kbd>, <kbd>Super</kbd> and <kbd>Shift</kbd>
+latch for the next key: tap <kbd>Ctrl</kbd>, then <kbd>C</kbd>. Tap a modifier again to release it.
+
+### Settings
+
+| Setting | Options |
+|---|---|
+| Key popup | On / off |
+| Animations | On / off (ripples, popups, slide in/out) |
+| Key style | Gboard (flat) / Classic (outlined) |
+| Keyboard height | 70 – 150 % |
+| Show keyboard | Automatically (text fields) / Manually (floating button) |
+| Theme | Auto (KDE) and 9 fixed themes |
+
+Settings are stored in `~/.config/KDE/huskie-board.conf`. Settings from the old `tastiera` name
+are migrated automatically.
+
+## How it works
+
+- **Typing** uses `zwp_input_method_v1`, the protocol KWin offers only to the keyboard process it
+  launches. Text is committed directly; special keys and shortcuts are sent as keysyms.
+- **Showing and hiding** follows KWin's activate/deactivate events for focused text fields.
+  Hiding is reported back to KWin, so tapping the still-focused field re-activates the keyboard.
+- **On screen**, the keyboard is a layer-shell overlay, so it never resizes your apps. While the
+  screen is locked it switches to an input-panel surface (`zwp_input_panel_surface_v1`), the only
+  keyboard surface KWin shows over the lock screen.
+- **Fallback:** if no text field is active, keys are sent through `/dev/uinput`.
+
+## Known limitations
+
+- **Global shortcuts:** shortcuts sent from the keyboard (e.g. <kbd>Super</kbd>+key,
+  <kbd>Alt</kbd>+<kbd>Tab</kbd>) reach the focused app, not KWin's global shortcuts.
+- **Apps without Wayland text input** (some terminals) don't trigger automatic showing. Use
+  manual mode, or Plasma's virtual-keyboard toggle.
+- **SDDM** isn't covered by the login-screen drop-in, only Plasma Login Manager. The drop-in
+  copies the greeter's KWin arguments, so a future plasma-login-manager update may require
+  updating it.
+
+## Development
 
 ```bash
-export XDG_RUNTIME_DIR=/run/user/10000
-export WAYLAND_DISPLAY=wayland-0
-./tastiera
+cmake -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build
 ```
 
-To deploy directly to a postmarketOS / Linux tablet via SSH:
-```bash
-./deploy_to_tablet.sh
-```
+The keyboard needs a Wayland session; for automatic mode it has to be launched by KWin as the
+input method. `deploy_to_tablet.sh` syncs, builds and restarts it on a tablet over SSH (set
+`TABLET_HOST` first). See [CHANGELOG.md](CHANGELOG.md) for the history of changes.
 
----
+## Credits & license
 
-## 📁 Project Structure
-
-```text
-plasma-keyboard/
-├── CMakeLists.txt              # CMake build manifest & QML module registration
-├── screenshot.png              # Screenshot preview for documentation
-├── deploy_to_tablet.sh         # One-click SSH build & deploy script
-├── src/
-│   ├── main.cpp                # LayerShellQt window setup & Qt app entrypoint
-│   ├── keyboardcontroller.h/cpp# Core state machine, input masks & backspace timers
-│   ├── waylandvirtualkeyboard.h/cpp # uinput & zwp_virtual_keyboard_v1 protocol driver
-│   ├── gestureengine.h/cpp     # Trie-based Italian dictionary predictive engine
-│   └── klipperintegration.h/cpp# KDE Klipper DBus clipboard integration
-└── qml/
-    ├── Main.qml                # Main window layout & stack views
-    ├── KeyButton.qml           # Dynamic key widget with slide-to-select accents
-    ├── TouchBarView.qml        # Header bar, layout toggles & theme switcher
-    ├── DPadPanel.qml           # Extended mode D-Pad & Esc/Tab/Ctrl/Alt panel
-    ├── SwipeCanvas.qml         # Gesture swipe rendering canvas
-    └── themes/                 # Pluggable visual themes QML files
-```
-
----
-
-## 📄 License
-
-GPL-3.0 License. Built for the KDE Plasma Community.
+Huskie-board started as a fork of [tastiera](https://github.com/andreadelsarto/tastiera) by
+Andrea Del Sarto. Licensed under the GPL-3.0, as declared by the original project.

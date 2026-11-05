@@ -3,12 +3,12 @@ import QtQuick.Window 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 import QtCore
-import Tastiera 1.0
+import HuskieBoard 1.0
 
 Window {
     id: mainWindow
     visible: false
-    title: "Tastiera"
+    title: "Huskie-board"
     color: "transparent"
     flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.BypassWindowManagerHint | Qt.WindowDoesNotAcceptFocus
 
@@ -22,7 +22,7 @@ Window {
     property bool showSettings: false
     property bool isMinimized: false
 
-    // Persistent user preferences (~/.config/KDE/tastiera.conf)
+    // Persistent user preferences (~/.config/KDE/huskie-board.conf)
     Settings {
         id: prefs
         category: "General"
@@ -1135,7 +1135,7 @@ Window {
                         wrapMode: Text.WordWrap
                         text: virtualKeyEngine.hasInputMethod
                               ? "Automatically: appears when a text field is focused. Manually: a floating button brings it back."
-                              : "Automatic mode needs Tastiera to be selected as the virtual keyboard in System Settings; using manual mode for now."
+                              : "Automatic mode needs Huskie-board to be selected as the virtual keyboard in System Settings; using manual mode for now."
                         color: settingsPanel.labelColor
                         opacity: 0.7
                         font.pixelSize: 12

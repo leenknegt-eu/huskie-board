@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(tastiera VERSION 0.91 LANGUAGES C CXX)
+project(huskie-board VERSION 0.91 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,7 +45,7 @@ set(IM_XML "${WAYLAND_PROTOCOLS_DIR}/unstable/input-method/input-method-unstable
 # Optional LayerShellQt support
 find_package(LayerShellQt)
 
-qt_add_executable(tastiera
+qt_add_executable(huskie-board
     src/main.cpp
     src/securebuffer.h
     src/keyboardcontroller.cpp
@@ -62,14 +62,14 @@ qt_add_executable(tastiera
     src/inputpanelshell.h
 )
 
-qt6_generate_wayland_protocol_client_sources(tastiera PRIVATE_CODE NO_INCLUDE_CORE_ONLY FILES ${IM_XML})
+qt6_generate_wayland_protocol_client_sources(huskie-board PRIVATE_CODE NO_INCLUDE_CORE_ONLY FILES ${IM_XML})
 
-target_include_directories(tastiera PRIVATE
+target_include_directories(huskie-board PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(tastiera PRIVATE
+target_link_libraries(huskie-board PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::GuiPrivate
@@ -84,16 +84,16 @@ target_link_libraries(tastiera PRIVATE
 )
 
 if(LayerShellQt_FOUND)
-    target_link_libraries(tastiera PRIVATE LayerShellQt::Interface)
-    target_compile_definitions(tastiera PRIVATE HAVE_LAYERSHELLQT=1)
+    target_link_libraries(huskie-board PRIVATE LayerShellQt::Interface)
+    target_compile_definitions(huskie-board PRIVATE HAVE_LAYERSHELLQT=1)
 endif()
 
 # Embed QML under qrc:/qt/qml/ (Qt's default import path). With the old "/" prefix the
 # module is only found when the binary runs from its build directory.
 qt_policy(SET QTP0001 NEW)
 
-qt_add_qml_module(tastiera
-    URI "Tastiera"
+qt_add_qml_module(huskie-board
+    URI "HuskieBoard"
     VERSION 1.0
     QML_FILES
         qml/Main.qml
@@ -123,12 +123,12 @@ qt_add_qml_module(tastiera
 )
 
 include(GNUInstallDirs)
-install(TARGETS tastiera RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES tastiera.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(TARGETS huskie-board RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES huskie-board.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 
-# Make the Plasma Login Manager greeter use Tastiera (it hard-codes plasma-keyboard)
-option(TASTIERA_LOGIN_SCREEN "Install a drop-in so Plasma Login Manager uses Tastiera" ON)
-if(TASTIERA_LOGIN_SCREEN)
-    install(FILES packaging/plasma-login/tastiera.conf
+# Make the Plasma Login Manager greeter use Huskie-board (it hard-codes plasma-keyboard)
+option(HUSKIE_LOGIN_SCREEN "Install a drop-in so Plasma Login Manager uses Huskie-board" ON)
+if(HUSKIE_LOGIN_SCREEN)
+    install(FILES packaging/plasma-login/huskie-board.conf
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/systemd/user/plasma-login-kwin_wayland.service.d)
 endif()

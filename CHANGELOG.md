@@ -1,8 +1,13 @@
 # Changelog
 
-All notable changes to **Plasma Keyboard** will be documented in this file.
+All notable changes to **Huskie-board** (formerly tastiera / Plasma Keyboard) are documented in this file.
 
 ## [Unreleased] (fork)
+
+- **Renamed to Huskie-board**: binary `huskie-board`, desktop entry `huskie-board.desktop`, Arch package
+  `huskie-board-git` (replaces `tastiera-git`), config `~/.config/KDE/huskie-board.conf` (old settings are
+  migrated automatically). Re-select the keyboard in System Settings after updating.
+- New README and screenshots.
 
 - Renamed binary/desktop entry to `tastiera` to avoid clashing with KDE's `plasma-keyboard` (Plasma 6.8+).
 - `make install` now installs the binary and `tastiera.desktop`.

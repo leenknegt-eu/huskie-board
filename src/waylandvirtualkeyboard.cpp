@@ -330,7 +330,7 @@ void WaylandVirtualKeyboard::createKeymap()
     if (!m_virtualKeyboard) return;
 
     m_keymapSize = strlen(KEYMAP_STRING) + 1;
-    m_keymapFd = memfd_create("tastiera-keymap", MFD_CLOEXEC);
+    m_keymapFd = memfd_create("huskie-board-keymap", MFD_CLOEXEC);
 
     if (m_keymapFd < 0) {
         char temp[] = "/tmp/pk-keymap-XXXXXX";

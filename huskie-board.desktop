@@ -1,8 +1,7 @@
 [Desktop Entry]
-Name=Tastiera Touch Keyboard
-Name[it]=Tastiera Touch
-Comment=Floating touch keyboard for KDE Plasma 6 Wayland
-Exec=tastiera
+Name=Huskie-board
+Comment=Touch keyboard for KDE Plasma 6 on Wayland
+Exec=huskie-board
 Icon=input-keyboard-virtual
 Type=Application
 Terminal=false
