@@ -8,6 +8,8 @@ All notable changes to **Huskie-board** (formerly tastiera / Plasma Keyboard) ar
   `huskie-board-git` (replaces `tastiera-git`), config `~/.config/KDE/huskie-board.conf` (old settings are
   migrated automatically). Re-select the keyboard in System Settings after updating.
 - New README and screenshots.
+- Added the GPL-3.0 license text (`LICENSE`), matching the licence declared by the original tastiera project.
+  The repository moved to https://github.com/leenknegt-eu/huskie-board (old URLs redirect).
 
 - Renamed binary/desktop entry to `tastiera` to avoid clashing with KDE's `plasma-keyboard` (Plasma 6.8+).
 - `make install` now installs the binary and `tastiera.desktop`.

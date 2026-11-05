@@ -5,8 +5,8 @@ pkgver=0.91
 pkgrel=1
 pkgdesc='Gboard-style touch keyboard for KDE Plasma 6 on Wayland'
 arch=('x86_64' 'aarch64')
-url='https://github.com/leenknegt-eu/tastiera'
-license=('GPL-3.0-or-later')
+url='https://github.com/leenknegt-eu/huskie-board'
+license=('GPL-3.0-only')
 depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'kcoreaddons' 'ki18n'
          'layer-shell-qt' 'wayland')
 makedepends=('git' 'cmake' 'extra-cmake-modules' 'wayland-protocols' 'ninja')

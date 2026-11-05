@@ -58,7 +58,7 @@ lock screen and the login screen, and follows your KDE colour scheme.
 ### Arch Linux (and derivatives, incl. aarch64)
 
 ```bash
-git clone https://github.com/leenknegt-eu/tastiera.git huskie-board
+git clone https://github.com/leenknegt-eu/huskie-board.git
 cd huskie-board/packaging/arch
 makepkg -si
 ```
@@ -154,4 +154,5 @@ input method. `deploy_to_tablet.sh` syncs, builds and restarts it on a tablet ov
 ## Credits & license
 
 Huskie-board started as a fork of [tastiera](https://github.com/andreadelsarto/tastiera) by
-Andrea Del Sarto. Licensed under the GPL-3.0, as declared by the original project.
+Andrea Del Sarto, which is released under the GPL-3.0. As a derivative work, Huskie-board is
+licensed under the **GNU General Public License v3.0** as well; see [LICENSE](LICENSE).
